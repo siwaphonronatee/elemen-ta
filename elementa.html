@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELEMENTA — ตารางธาตุและห้องทดลองปฏิกิริยา</title>
+<style>
+/* ============================================================
+   ELEMENTA — periodic table + reaction lab
+   Design: dark instrument-panel aesthetic, category-coded glow
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg: #090c11;
+  --bg-grid: #0d1219;
+  --panel: #121a24;
+  --panel-2: #17212c;
+  --line: #223140;
+  --text: #e7edf3;
+  --muted: #7c8896;
+  --muted-2: #4d5a68;
+
+  --alkali: #ff6b6b;
+  --alkaline: #ffa94d;
+  --transition: #4fd1c5;
+  --posttrans: #63d471;
+  --metalloid: #f2c94c;
+  --nonmetal: #56b6e9;
+  --halogen: #b794f6;
+  --noble: #f783ac;
+  --lanthanide: #66e0c4;
+  --actinide: #ff8a80;
+  --unknown: #8d99ae;
+
+  --focus: #7ee6ff;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #101c26 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, #1a1420 0%, transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter', system-ui, sans-serif;
+  min-height:100%;
+}
+
+::selection{ background:var(--focus); color:#04141a; }
+
+a{ color:inherit; }
+
+.wrap{
+  max-width:1180px;
+  margin:0 auto;
+  padding:28px 20px 80px;
+}
+
+/* ---------------- header ---------------- */
+header.top{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:22px;
+  flex-wrap:wrap;
+}
+.brand{ display:flex; align-items:baseline; gap:12px; }
+.brand .mark{
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  color:var(--focus);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:3px 7px;
+  letter-spacing:.08em;
+}
+h1{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:clamp(28px,4vw,40px);
+  margin:2px 0 0;
+  letter-spacing:-0.02em;
+}
+.tagline{
+  color:var(--muted);
+  font-size:14.5px;
+  max-width:440px;
+  line-height:1.5;
+  margin:0;
+}
+
+.toolbar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.search{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:9px 12px;
+  color:var(--text);
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  width:190px;
+  outline:none;
+  transition:border-color .15s;
+}
+.search:focus{ border-color:var(--focus); }
+.search::placeholder{ color:var(--muted-2); }
+
+.btn{
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--muted);
+  border-radius:8px;
+  padding:9px 13px;
+  font-size:13px;
+  font-family:'Inter',sans-serif;
+  cursor:pointer;
+  transition:.15s;
+}
+.btn:hover{ color:var(--text); border-color:#3a4d5f; }
+
+/* ---------------- legend ---------------- */
+.legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  margin:16px 0 20px;
+  padding:12px 14px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.legend-item{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+  color:var(--muted);
+  cursor:pointer;
+  padding:3px 6px;
+  border-radius:6px;
+  transition:.15s;
+  user-select:none;
+}
+.legend-item:hover{ background:var(--panel-2); color:var(--text); }
+.legend-item.active{ background:var(--panel-2); color:var(--text); box-shadow:inset 0 0 0 1px var(--line); }
+.swatch{ width:10px; height:10px; border-radius:3px; flex:none; }
+
+/* ---------------- periodic table ---------------- */
+.table-scroll{
+  overflow-x:auto;
+  padding-bottom:8px;
+  margin-bottom:26px;
+}
+.ptable{
+  display:grid;
+  grid-template-columns:repeat(18, minmax(58px,1fr));
+  grid-auto-rows:minmax(62px,1fr);
+  gap:5px;
+  min-width:1150px;
+}
+.spacer-row{ grid-column:1/-1; height:14px; }
+
+.tile{
+  position:relative;
+  border-radius:9px;
+  background:color-mix(in srgb, var(--cat-color, var(--muted)) 22%, var(--panel));
+  border:1.5px solid color-mix(in srgb, var(--cat-color, var(--muted)) 55%, var(--line));
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:4px 3px 3px;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, opacity .15s ease, z-index 0s;
+  overflow:visible;
+  text-align:center;
+  z-index:1;
+}
+.tile .z{ position:absolute; top:3px; left:5px; font-family:'JetBrains Mono', monospace; font-size:9px; color:var(--muted); }
+.tile .sym{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:16px; line-height:1.1; color:var(--text); margin-top:4px; }
+.tile .th{ font-size:8.5px; color:var(--muted); line-height:1.1; margin-top:1px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tile .mass{ font-family:'JetBrains Mono', monospace; font-size:7.5px; color:var(--muted-2); margin-top:2px; }
+
+.tile:hover{
+  transform:translateY(-4px) scale(1.12);
+  z-index:5;
+  box-shadow:0 10px 22px -8px var(--cat-color, transparent), 0 0 0 2px var(--cat-color, var(--focus));
+  background:color-mix(in srgb, var(--cat-color, var(--muted)) 38%, var(--panel));
+}
+.tile:hover .sym{ color:#fff; }
+.tile:active{ transform:translateY(-1px) scale(1.04); }
+
+/* hover tooltip */
+.tile .tip{
+  position:absolute;
+  bottom:calc(100% + 8px);
+  left:50%;
+  transform:translate(-50%,4px);
+  background:#0a0f14;
+  border:1px solid var(--cat-color, var(--line));
+  color:var(--text);
+  font-size:11px;
+  padding:6px 9px;
+  border-radius:8px;
+  white-space:nowrap;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease;
+  box-shadow:0 8px 20px -6px rgba(0,0,0,.6);
+}
+.tile:hover .tip{ opacity:1; transform:translate(-50%,0); }
+
+.tile.dim{ opacity:.15; filter:grayscale(.4); }
+.tile.selected{
+  background:color-mix(in srgb, var(--cat-color, var(--muted)) 55%, var(--panel));
+  border-color:var(--cat-color, var(--focus));
+  box-shadow:0 0 0 2px var(--cat-color, var(--focus)), 0 0 20px -2px var(--cat-color, var(--focus));
+  animation:pulse-in .3s ease;
+}
+.tile.selected .sym{ color:#fff; }
+.tile.selected::after{
+  content:"";
+  position:absolute; top:3px; right:5px;
+  width:6px; height:6px; border-radius:50%;
+  background:var(--cat-color, var(--focus));
+  box-shadow:0 0 6px 1px var(--cat-color, var(--focus));
+}
+@keyframes pulse-in{
+  0%{ transform:scale(.9); }
+  60%{ transform:scale(1.06); }
+  100%{ transform:scale(1); }
+}
+
+/* ---------------- lab / selection panel ---------------- */
+.lab{
+  display:grid;
+  grid-template-columns: 1.1fr 1.4fr;
+  gap:18px;
+}
+@media (max-width:820px){ .lab{ grid-template-columns:1fr; } }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+}
+.panel h2{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:14px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+  margin:0 0 14px;
+}
+
+/* selection tray */
+.tray{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin-bottom:14px;
+}
+.slot{
+  width:88px; height:88px;
+  border:1.5px dashed var(--line);
+  border-radius:12px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-family:'Space Grotesk', sans-serif;
+  color:var(--muted-2);
+  position:relative;
+  transition:.2s;
+}
+.slot.filled{
+  border-style:solid;
+  color:var(--text);
+}
+.slot .slot-sym{ font-size:26px; font-weight:700; }
+.slot .slot-name{ font-size:9px; color:var(--muted); margin-top:2px; text-align:center; padding:0 4px; }
+.plus{ font-family:'JetBrains Mono', monospace; color:var(--muted-2); font-size:20px; }
+
+/* element info card */
+.info-empty{ color:var(--muted-2); font-size:13px; text-align:center; padding:20px 0; }
+.info-card .row{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; }
+.info-card .row:last-child{ border-bottom:none; }
+.info-card .row .k{ color:var(--muted); }
+.info-card .row .v{ font-family:'JetBrains Mono', monospace; color:var(--text); }
+.info-card .head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.info-card .head .big-sym{
+  font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:34px;
+  width:64px; height:64px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--panel-2); border:1px solid var(--line);
+}
+.info-card .head .name-en{ font-family:'Space Grotesk', sans-serif; font-size:17px; }
+.info-card .head .name-th{ font-size:12px; color:var(--muted); }
+.cat-pill{
+  display:inline-block; font-size:10px; padding:2px 8px; border-radius:20px;
+  margin-top:4px; border:1px solid var(--line);
+}
+
+/* reaction readout */
+.readout{
+  background:linear-gradient(180deg,#0c1319,#0a0f14);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px;
+  min-height:150px;
+  position:relative;
+  overflow:hidden;
+}
+.readout::before{
+  content:"";
+  position:absolute; left:0; right:0; top:0; height:2px;
+  background:linear-gradient(90deg, transparent, var(--focus), transparent);
+  opacity:0;
+}
+.readout.scan::before{
+  opacity:1;
+  animation:scan 1.1s ease-out;
+}
+@keyframes scan{
+  0%{ transform:translateY(0); opacity:1; }
+  100%{ transform:translateY(148px); opacity:0; }
+}
+.readout .eq{
+  font-family:'JetBrains Mono', monospace;
+  font-size:15px;
+  color:var(--focus);
+  margin:0 0 10px;
+  line-height:1.5;
+  word-break:break-word;
+}
+.readout .product{ font-family:'Space Grotesk',sans-serif; font-size:16px; margin:0 0 8px; }
+.readout .meta{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px; }
+.readout .meta div{ font-size:11px; color:var(--muted); }
+.readout .meta span{ display:block; font-family:'JetBrains Mono', monospace; color:var(--text); font-size:12.5px; margin-top:2px; }
+.readout .desc{ font-size:13px; color:var(--muted); line-height:1.6; }
+.readout .none-badge{
+  display:inline-block;
+  font-size:11px; color:var(--muted-2);
+  border:1px solid var(--line); border-radius:20px;
+  padding:2px 10px; margin-bottom:8px;
+}
+
+.hint{ font-size:12px; color:var(--muted-2); text-align:center; margin-top:6px; }
+
+footer.foot{
+  text-align:center;
+  color:var(--muted-2);
+  font-size:12px;
+  margin-top:40px;
+}
+
+/* scrollbar */
+.table-scroll::-webkit-scrollbar{ height:8px; }
+.table-scroll::-webkit-scrollbar-thumb{ background:var(--line); border-radius:8px; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">
+        <span class="mark">Z:1–118</span>
+        <h1>ELEMENTA</h1>
+      </div>
+      <p class="tagline">ตารางธาตุครบทั้ง 118 ธาตุ — เลือก 2 ธาตุเพื่อดูว่าจะเกิดปฏิกิริยาอะไรขึ้น พร้อมสมการและคำอธิบาย</p>
+    </div>
+    <div class="toolbar">
+      <input id="search" class="search" type="text" placeholder="ค้นหาธาตุ เช่น Fe, Iron, 26" />
+      <button id="resetBtn" class="btn">รีเซ็ต</button>
+    </div>
+  </header>
+
+  <div id="legend" class="legend"></div>
+
+  <div class="table-scroll">
+    <div id="ptable" class="ptable"></div>
+  </div>
+
+  <div class="lab">
+    <div class="panel">
+      <h2>ห้องทดลอง — เลือกธาตุ</h2>
+      <div class="tray">
+        <div id="slot1" class="slot"><span class="slot-sym">?</span></div>
+        <div class="plus">+</div>
+        <div id="slot2" class="slot"><span class="slot-sym">?</span></div>
+      </div>
+      <div id="infoPanel"></div>
+    </div>
+
+    <div class="panel">
+      <h2>ผลลัพธ์ปฏิกิริยา</h2>
+      <div id="readout" class="readout"></div>
+      <p class="hint">ฐานข้อมูลนี้คัดสรรเฉพาะปฏิกิริยาที่ตรวจสอบแล้วเกือบ 200 คู่ เพื่อความถูกต้องแม่นยำ ไม่ได้ครอบคลุมทุกคู่ธาตุ (118×118 คู่)</p>
+    </div>
+  </div>
+
+  <footer class="foot">
+    ข้อมูลอ้างอิงจากค่ามาตรฐานทางเคมีทั่วไป (มวลอะตอมโดยประมาณ, * = กัมมันตรังสี/ไม่มีน้ำหนักอะตอมมาตรฐาน) — สร้างเพื่อการศึกษาและพอร์ตโฟลิโอ
+  </footer>
+
+</div>
+
+
+<script>
+// Auto-generated data — periodic table (118 elements) + curated reaction database
+const ELEMENTS = [{"z": 1, "symbol": "H", "name": "Hydrogen", "nameTh": "ไฮโดรเจน", "mass": 1.008, "category": "nonmetal", "phase": "gas", "row": 1, "col": 1, "period": 1, "group": 1, "block": "s", "radioactive": false}, {"z": 2, "symbol": "He", "name": "Helium", "nameTh": "ฮีเลียม", "mass": 4.003, "category": "noble", "phase": "gas", "row": 1, "col": 18, "period": 1, "group": 18, "block": "s", "radioactive": false}, {"z": 3, "symbol": "Li", "name": "Lithium", "nameTh": "ลิเทียม", "mass": 6.94, "category": "alkali", "phase": "solid", "row": 2, "col": 1, "period": 2, "group": 1, "block": "s", "radioactive": false}, {"z": 4, "symbol": "Be", "name": "Beryllium", "nameTh": "เบริลเลียม", "mass": 9.012, "category": "alkaline", "phase": "solid", "row": 2, "col": 2, "period": 2, "group": 2, "block": "s", "radioactive": false}, {"z": 5, "symbol": "B", "name": "Boron", "nameTh": "โบรอน", "mass": 10.81, "category": "metalloid", "phase": "solid", "row": 2, "col": 13, "period": 2, "group": 13, "block": "p", "radioactive": false}, {"z": 6, "symbol": "C", "name": "Carbon", "nameTh": "คาร์บอน", "mass": 12.011, "category": "nonmetal", "phase": "solid", "row": 2, "col": 14, "period": 2, "group": 14, "block": "p", "radioactive": false}, {"z": 7, "symbol": "N", "name": "Nitrogen", "nameTh": "ไนโตรเจน", "mass": 14.007, "category": "nonmetal", "phase": "gas", "row": 2, "col": 15, "period": 2, "group": 15, "block": "p", "radioactive": false}, {"z": 8, "symbol": "O", "name": "Oxygen", "nameTh": "ออกซิเจน", "mass": 15.999, "category": "nonmetal", "phase": "gas", "row": 2, "col": 16, "period": 2, "group": 16, "block": "p", "radioactive": false}, {"z": 9, "symbol": "F", "name": "Fluorine", "nameTh": "ฟลูออรีน", "mass": 18.998, "category": "halogen", "phase": "gas", "row": 2, "col": 17, "period": 2, "group": 17, "block": "p", "radioactive": false}, {"z": 10, "symbol": "Ne", "name": "Neon", "nameTh": "นีออน", "mass": 20.18, "category": "noble", "phase": "gas", "row": 2, "col": 18, "period": 2, "group": 18, "block": "p", "radioactive": false}, {"z": 11, "symbol": "Na", "name": "Sodium", "nameTh": "โซเดียม", "mass": 22.99, "category": "alkali", "phase": "solid", "row": 3, "col": 1, "period": 3, "group": 1, "block": "s", "radioactive": false}, {"z": 12, "symbol": "Mg", "name": "Magnesium", "nameTh": "แมกนีเซียม", "mass": 24.305, "category": "alkaline", "phase": "solid", "row": 3, "col": 2, "period": 3, "group": 2, "block": "s", "radioactive": false}, {"z": 13, "symbol": "Al", "name": "Aluminium", "nameTh": "อะลูมิเนียม", "mass": 26.982, "category": "post-transition", "phase": "solid", "row": 3, "col": 13, "period": 3, "group": 13, "block": "p", "radioactive": false}, {"z": 14, "symbol": "Si", "name": "Silicon", "nameTh": "ซิลิคอน", "mass": 28.085, "category": "metalloid", "phase": "solid", "row": 3, "col": 14, "period": 3, "group": 14, "block": "p", "radioactive": false}, {"z": 15, "symbol": "P", "name": "Phosphorus", "nameTh": "ฟอสฟอรัส", "mass": 30.974, "category": "nonmetal", "phase": "solid", "row": 3, "col": 15, "period": 3, "group": 15, "block": "p", "radioactive": false}, {"z": 16, "symbol": "S", "name": "Sulfur", "nameTh": "กำมะถัน", "mass": 32.06, "category": "nonmetal", "phase": "solid", "row": 3, "col": 16, "period": 3, "group": 16, "block": "p", "radioactive": false}, {"z": 17, "symbol": "Cl", "name": "Chlorine", "nameTh": "คลอรีน", "mass": 35.45, "category": "halogen", "phase": "gas", "row": 3, "col": 17, "period": 3, "group": 17, "block": "p", "radioactive": false}, {"z": 18, "symbol": "Ar", "name": "Argon", "nameTh": "อาร์กอน", "mass": 39.948, "category": "noble", "phase": "gas", "row": 3, "col": 18, "period": 3, "group": 18, "block": "p", "radioactive": false}, {"z": 19, "symbol": "K", "name": "Potassium", "nameTh": "โพแทสเซียม", "mass": 39.098, "category": "alkali", "phase": "solid", "row": 4, "col": 1, "period": 4, "group": 1, "block": "s", "radioactive": false}, {"z": 20, "symbol": "Ca", "name": "Calcium", "nameTh": "แคลเซียม", "mass": 40.078, "category": "alkaline", "phase": "solid", "row": 4, "col": 2, "period": 4, "group": 2, "block": "s", "radioactive": false}, {"z": 21, "symbol": "Sc", "name": "Scandium", "nameTh": "สแกนเดียม", "mass": 44.956, "category": "transition", "phase": "solid", "row": 4, "col": 3, "period": 4, "group": 3, "block": "d", "radioactive": false}, {"z": 22, "symbol": "Ti", "name": "Titanium", "nameTh": "ไทเทเนียม", "mass": 47.867, "category": "transition", "phase": "solid", "row": 4, "col": 4, "period": 4, "group": 4, "block": "d", "radioactive": false}, {"z": 23, "symbol": "V", "name": "Vanadium", "nameTh": "วานาเดียม", "mass": 50.942, "category": "transition", "phase": "solid", "row": 4, "col": 5, "period": 4, "group": 5, "block": "d", "radioactive": false}, {"z": 24, "symbol": "Cr", "name": "Chromium", "nameTh": "โครเมียม", "mass": 51.996, "category": "transition", "phase": "solid", "row": 4, "col": 6, "period": 4, "group": 6, "block": "d", "radioactive": false}, {"z": 25, "symbol": "Mn", "name": "Manganese", "nameTh": "แมงกานีส", "mass": 54.938, "category": "transition", "phase": "solid", "row": 4, "col": 7, "period": 4, "group": 7, "block": "d", "radioactive": false}, {"z": 26, "symbol": "Fe", "name": "Iron", "nameTh": "เหล็ก", "mass": 55.845, "category": "transition", "phase": "solid", "row": 4, "col": 8, "period": 4, "group": 8, "block": "d", "radioactive": false}, {"z": 27, "symbol": "Co", "name": "Cobalt", "nameTh": "โคบอลต์", "mass": 58.933, "category": "transition", "phase": "solid", "row": 4, "col": 9, "period": 4, "group": 9, "block": "d", "radioactive": false}, {"z": 28, "symbol": "Ni", "name": "Nickel", "nameTh": "นิกเกิล", "mass": 58.693, "category": "transition", "phase": "solid", "row": 4, "col": 10, "period": 4, "group": 10, "block": "d", "radioactive": false}, {"z": 29, "symbol": "Cu", "name": "Copper", "nameTh": "ทองแดง", "mass": 63.546, "category": "transition", "phase": "solid", "row": 4, "col": 11, "period": 4, "group": 11, "block": "d", "radioactive": false}, {"z": 30, "symbol": "Zn", "name": "Zinc", "nameTh": "สังกะสี", "mass": 65.38, "category": "transition", "phase": "solid", "row": 4, "col": 12, "period": 4, "group": 12, "block": "d", "radioactive": false}, {"z": 31, "symbol": "Ga", "name": "Gallium", "nameTh": "แกลเลียม", "mass": 69.723, "category": "post-transition", "phase": "solid", "row": 4, "col": 13, "period": 4, "group": 13, "block": "p", "radioactive": false}, {"z": 32, "symbol": "Ge", "name": "Germanium", "nameTh": "เจอร์เมเนียม", "mass": 72.63, "category": "metalloid", "phase": "solid", "row": 4, "col": 14, "period": 4, "group": 14, "block": "p", "radioactive": false}, {"z": 33, "symbol": "As", "name": "Arsenic", "nameTh": "สารหนู", "mass": 74.922, "category": "metalloid", "phase": "solid", "row": 4, "col": 15, "period": 4, "group": 15, "block": "p", "radioactive": false}, {"z": 34, "symbol": "Se", "name": "Selenium", "nameTh": "ซีลีเนียม", "mass": 78.971, "category": "nonmetal", "phase": "solid", "row": 4, "col": 16, "period": 4, "group": 16, "block": "p", "radioactive": false}, {"z": 35, "symbol": "Br", "name": "Bromine", "nameTh": "โบรมีน", "mass": 79.904, "category": "halogen", "phase": "liquid", "row": 4, "col": 17, "period": 4, "group": 17, "block": "p", "radioactive": false}, {"z": 36, "symbol": "Kr", "name": "Krypton", "nameTh": "คริปทอน", "mass": 83.798, "category": "noble", "phase": "gas", "row": 4, "col": 18, "period": 4, "group": 18, "block": "p", "radioactive": false}, {"z": 37, "symbol": "Rb", "name": "Rubidium", "nameTh": "รูบิเดียม", "mass": 85.468, "category": "alkali", "phase": "solid", "row": 5, "col": 1, "period": 5, "group": 1, "block": "s", "radioactive": false}, {"z": 38, "symbol": "Sr", "name": "Strontium", "nameTh": "สตรอนเชียม", "mass": 87.62, "category": "alkaline", "phase": "solid", "row": 5, "col": 2, "period": 5, "group": 2, "block": "s", "radioactive": false}, {"z": 39, "symbol": "Y", "name": "Yttrium", "nameTh": "อิตเทรียม", "mass": 88.906, "category": "transition", "phase": "solid", "row": 5, "col": 3, "period": 5, "group": 3, "block": "d", "radioactive": false}, {"z": 40, "symbol": "Zr", "name": "Zirconium", "nameTh": "เซอร์โคเนียม", "mass": 91.224, "category": "transition", "phase": "solid", "row": 5, "col": 4, "period": 5, "group": 4, "block": "d", "radioactive": false}, {"z": 41, "symbol": "Nb", "name": "Niobium", "nameTh": "ไนโอเบียม", "mass": 92.906, "category": "transition", "phase": "solid", "row": 5, "col": 5, "period": 5, "group": 5, "block": "d", "radioactive": false}, {"z": 42, "symbol": "Mo", "name": "Molybdenum", "nameTh": "โมลิบดีนัม", "mass": 95.95, "category": "transition", "phase": "solid", "row": 5, "col": 6, "period": 5, "group": 6, "block": "d", "radioactive": false}, {"z": 43, "symbol": "Tc", "name": "Technetium", "nameTh": "เทคนีเชียม", "mass": 98, "category": "transition", "phase": "solid", "row": 5, "col": 7, "period": 5, "group": 7, "block": "d", "radioactive": true}, {"z": 44, "symbol": "Ru", "name": "Ruthenium", "nameTh": "รูทีเนียม", "mass": 101.07, "category": "transition", "phase": "solid", "row": 5, "col": 8, "period": 5, "group": 8, "block": "d", "radioactive": false}, {"z": 45, "symbol": "Rh", "name": "Rhodium", "nameTh": "โรเดียม", "mass": 102.906, "category": "transition", "phase": "solid", "row": 5, "col": 9, "period": 5, "group": 9, "block": "d", "radioactive": false}, {"z": 46, "symbol": "Pd", "name": "Palladium", "nameTh": "แพลเลเดียม", "mass": 106.42, "category": "transition", "phase": "solid", "row": 5, "col": 10, "period": 5, "group": 10, "block": "d", "radioactive": false}, {"z": 47, "symbol": "Ag", "name": "Silver", "nameTh": "เงิน", "mass": 107.868, "category": "transition", "phase": "solid", "row": 5, "col": 11, "period": 5, "group": 11, "block": "d", "radioactive": false}, {"z": 48, "symbol": "Cd", "name": "Cadmium", "nameTh": "แคดเมียม", "mass": 112.414, "category": "transition", "phase": "solid", "row": 5, "col": 12, "period": 5, "group": 12, "block": "d", "radioactive": false}, {"z": 49, "symbol": "In", "name": "Indium", "nameTh": "อินเดียม", "mass": 114.818, "category": "post-transition", "phase": "solid", "row": 5, "col": 13, "period": 5, "group": 13, "block": "p", "radioactive": false}, {"z": 50, "symbol": "Sn", "name": "Tin", "nameTh": "ดีบุก", "mass": 118.71, "category": "post-transition", "phase": "solid", "row": 5, "col": 14, "period": 5, "group": 14, "block": "p", "radioactive": false}, {"z": 51, "symbol": "Sb", "name": "Antimony", "nameTh": "พลวง", "mass": 121.76, "category": "metalloid", "phase": "solid", "row": 5, "col": 15, "period": 5, "group": 15, "block": "p", "radioactive": false}, {"z": 52, "symbol": "Te", "name": "Tellurium", "nameTh": "เทลลูเรียม", "mass": 127.6, "category": "metalloid", "phase": "solid", "row": 5, "col": 16, "period": 5, "group": 16, "block": "p", "radioactive": false}, {"z": 53, "symbol": "I", "name": "Iodine", "nameTh": "ไอโอดีน", "mass": 126.904, "category": "halogen", "phase": "solid", "row": 5, "col": 17, "period": 5, "group": 17, "block": "p", "radioactive": false}, {"z": 54, "symbol": "Xe", "name": "Xenon", "nameTh": "ซีนอน", "mass": 131.293, "category": "noble", "phase": "gas", "row": 5, "col": 18, "period": 5, "group": 18, "block": "p", "radioactive": false}, {"z": 55, "symbol": "Cs", "name": "Caesium", "nameTh": "ซีเซียม", "mass": 132.905, "category": "alkali", "phase": "solid", "row": 6, "col": 1, "period": 6, "group": 1, "block": "s", "radioactive": false}, {"z": 56, "symbol": "Ba", "name": "Barium", "nameTh": "แบเรียม", "mass": 137.327, "category": "alkaline", "phase": "solid", "row": 6, "col": 2, "period": 6, "group": 2, "block": "s", "radioactive": false}, {"z": 57, "symbol": "La", "name": "Lanthanum", "nameTh": "แลนทานัม", "mass": 138.905, "category": "lanthanide", "phase": "solid", "row": 6, "col": 3, "period": 6, "group": 3, "block": "d", "radioactive": false}, {"z": 58, "symbol": "Ce", "name": "Cerium", "nameTh": "ซีเรียม", "mass": 140.116, "category": "lanthanide", "phase": "solid", "row": 9, "col": 4, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 59, "symbol": "Pr", "name": "Praseodymium", "nameTh": "เพรซีโอดิเมียม", "mass": 140.908, "category": "lanthanide", "phase": "solid", "row": 9, "col": 5, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 60, "symbol": "Nd", "name": "Neodymium", "nameTh": "นีโอดิเมียม", "mass": 144.242, "category": "lanthanide", "phase": "solid", "row": 9, "col": 6, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 61, "symbol": "Pm", "name": "Promethium", "nameTh": "โพรมีเทียม", "mass": 145, "category": "lanthanide", "phase": "solid", "row": 9, "col": 7, "period": 6, "group": null, "block": "f", "radioactive": true}, {"z": 62, "symbol": "Sm", "name": "Samarium", "nameTh": "ซาแมเรียม", "mass": 150.36, "category": "lanthanide", "phase": "solid", "row": 9, "col": 8, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 63, "symbol": "Eu", "name": "Europium", "nameTh": "ยูโรเพียม", "mass": 151.964, "category": "lanthanide", "phase": "solid", "row": 9, "col": 9, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 64, "symbol": "Gd", "name": "Gadolinium", "nameTh": "แกโดลิเนียม", "mass": 157.25, "category": "lanthanide", "phase": "solid", "row": 9, "col": 10, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 65, "symbol": "Tb", "name": "Terbium", "nameTh": "เทอร์เบียม", "mass": 158.925, "category": "lanthanide", "phase": "solid", "row": 9, "col": 11, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 66, "symbol": "Dy", "name": "Dysprosium", "nameTh": "ดิสโพรเซียม", "mass": 162.5, "category": "lanthanide", "phase": "solid", "row": 9, "col": 12, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 67, "symbol": "Ho", "name": "Holmium", "nameTh": "โฮลเมียม", "mass": 164.93, "category": "lanthanide", "phase": "solid", "row": 9, "col": 13, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 68, "symbol": "Er", "name": "Erbium", "nameTh": "เออร์เบียม", "mass": 167.259, "category": "lanthanide", "phase": "solid", "row": 9, "col": 14, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 69, "symbol": "Tm", "name": "Thulium", "nameTh": "ทูเลียม", "mass": 168.934, "category": "lanthanide", "phase": "solid", "row": 9, "col": 15, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 70, "symbol": "Yb", "name": "Ytterbium", "nameTh": "อิตเทอร์เบียม", "mass": 173.045, "category": "lanthanide", "phase": "solid", "row": 9, "col": 16, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 71, "symbol": "Lu", "name": "Lutetium", "nameTh": "ลูทีเชียม", "mass": 174.967, "category": "lanthanide", "phase": "solid", "row": 9, "col": 17, "period": 6, "group": null, "block": "f", "radioactive": false}, {"z": 72, "symbol": "Hf", "name": "Hafnium", "nameTh": "แฮฟเนียม", "mass": 178.49, "category": "transition", "phase": "solid", "row": 6, "col": 4, "period": 6, "group": 4, "block": "d", "radioactive": false}, {"z": 73, "symbol": "Ta", "name": "Tantalum", "nameTh": "แทนทาลัม", "mass": 180.948, "category": "transition", "phase": "solid", "row": 6, "col": 5, "period": 6, "group": 5, "block": "d", "radioactive": false}, {"z": 74, "symbol": "W", "name": "Tungsten", "nameTh": "ทังสเตน", "mass": 183.84, "category": "transition", "phase": "solid", "row": 6, "col": 6, "period": 6, "group": 6, "block": "d", "radioactive": false}, {"z": 75, "symbol": "Re", "name": "Rhenium", "nameTh": "รีเนียม", "mass": 186.207, "category": "transition", "phase": "solid", "row": 6, "col": 7, "period": 6, "group": 7, "block": "d", "radioactive": false}, {"z": 76, "symbol": "Os", "name": "Osmium", "nameTh": "ออสเมียม", "mass": 190.23, "category": "transition", "phase": "solid", "row": 6, "col": 8, "period": 6, "group": 8, "block": "d", "radioactive": false}, {"z": 77, "symbol": "Ir", "name": "Iridium", "nameTh": "อิริเดียม", "mass": 192.217, "category": "transition", "phase": "solid", "row": 6, "col": 9, "period": 6, "group": 9, "block": "d", "radioactive": false}, {"z": 78, "symbol": "Pt", "name": "Platinum", "nameTh": "แพลตทินัม", "mass": 195.084, "category": "transition", "phase": "solid", "row": 6, "col": 10, "period": 6, "group": 10, "block": "d", "radioactive": false}, {"z": 79, "symbol": "Au", "name": "Gold", "nameTh": "ทองคำ", "mass": 196.967, "category": "transition", "phase": "solid", "row": 6, "col": 11, "period": 6, "group": 11, "block": "d", "radioactive": false}, {"z": 80, "symbol": "Hg", "name": "Mercury", "nameTh": "ปรอท", "mass": 200.592, "category": "transition", "phase": "liquid", "row": 6, "col": 12, "period": 6, "group": 12, "block": "d", "radioactive": false}, {"z": 81, "symbol": "Tl", "name": "Thallium", "nameTh": "แทลเลียม", "mass": 204.38, "category": "post-transition", "phase": "solid", "row": 6, "col": 13, "period": 6, "group": 13, "block": "p", "radioactive": false}, {"z": 82, "symbol": "Pb", "name": "Lead", "nameTh": "ตะกั่ว", "mass": 207.2, "category": "post-transition", "phase": "solid", "row": 6, "col": 14, "period": 6, "group": 14, "block": "p", "radioactive": false}, {"z": 83, "symbol": "Bi", "name": "Bismuth", "nameTh": "บิสมัท", "mass": 208.98, "category": "post-transition", "phase": "solid", "row": 6, "col": 15, "period": 6, "group": 15, "block": "p", "radioactive": false}, {"z": 84, "symbol": "Po", "name": "Polonium", "nameTh": "พอโลเนียม", "mass": 209, "category": "post-transition", "phase": "solid", "row": 6, "col": 16, "period": 6, "group": 16, "block": "p", "radioactive": true}, {"z": 85, "symbol": "At", "name": "Astatine", "nameTh": "แอสทาทีน", "mass": 210, "category": "halogen", "phase": "solid", "row": 6, "col": 17, "period": 6, "group": 17, "block": "p", "radioactive": true}, {"z": 86, "symbol": "Rn", "name": "Radon", "nameTh": "เรดอน", "mass": 222, "category": "noble", "phase": "gas", "row": 6, "col": 18, "period": 6, "group": 18, "block": "p", "radioactive": true}, {"z": 87, "symbol": "Fr", "name": "Francium", "nameTh": "แฟรนเซียม", "mass": 223, "category": "alkali", "phase": "solid", "row": 7, "col": 1, "period": 7, "group": 1, "block": "s", "radioactive": true}, {"z": 88, "symbol": "Ra", "name": "Radium", "nameTh": "เรเดียม", "mass": 226, "category": "alkaline", "phase": "solid", "row": 7, "col": 2, "period": 7, "group": 2, "block": "s", "radioactive": true}, {"z": 89, "symbol": "Ac", "name": "Actinium", "nameTh": "แอกทิเนียม", "mass": 227, "category": "actinide", "phase": "solid", "row": 7, "col": 3, "period": 7, "group": 3, "block": "d", "radioactive": true}, {"z": 90, "symbol": "Th", "name": "Thorium", "nameTh": "ทอเรียม", "mass": 232.038, "category": "actinide", "phase": "solid", "row": 10, "col": 4, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 91, "symbol": "Pa", "name": "Protactinium", "nameTh": "โพรแทกทิเนียม", "mass": 231.036, "category": "actinide", "phase": "solid", "row": 10, "col": 5, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 92, "symbol": "U", "name": "Uranium", "nameTh": "ยูเรเนียม", "mass": 238.029, "category": "actinide", "phase": "solid", "row": 10, "col": 6, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 93, "symbol": "Np", "name": "Neptunium", "nameTh": "เนปทูเนียม", "mass": 237, "category": "actinide", "phase": "solid", "row": 10, "col": 7, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 94, "symbol": "Pu", "name": "Plutonium", "nameTh": "พลูโทเนียม", "mass": 244, "category": "actinide", "phase": "solid", "row": 10, "col": 8, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 95, "symbol": "Am", "name": "Americium", "nameTh": "อะเมริเซียม", "mass": 243, "category": "actinide", "phase": "solid", "row": 10, "col": 9, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 96, "symbol": "Cm", "name": "Curium", "nameTh": "คูเรียม", "mass": 247, "category": "actinide", "phase": "solid", "row": 10, "col": 10, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 97, "symbol": "Bk", "name": "Berkelium", "nameTh": "เบอร์คีเลียม", "mass": 247, "category": "actinide", "phase": "solid", "row": 10, "col": 11, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 98, "symbol": "Cf", "name": "Californium", "nameTh": "แคลิฟอร์เนียม", "mass": 251, "category": "actinide", "phase": "solid", "row": 10, "col": 12, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 99, "symbol": "Es", "name": "Einsteinium", "nameTh": "ไอน์สไตเนียม", "mass": 252, "category": "actinide", "phase": "solid", "row": 10, "col": 13, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 100, "symbol": "Fm", "name": "Fermium", "nameTh": "เฟอร์เมียม", "mass": 257, "category": "actinide", "phase": "solid", "row": 10, "col": 14, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 101, "symbol": "Md", "name": "Mendelevium", "nameTh": "เมนเดลีเวียม", "mass": 258, "category": "actinide", "phase": "solid", "row": 10, "col": 15, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 102, "symbol": "No", "name": "Nobelium", "nameTh": "โนเบเลียม", "mass": 259, "category": "actinide", "phase": "solid", "row": 10, "col": 16, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 103, "symbol": "Lr", "name": "Lawrencium", "nameTh": "ลอว์เรนเซียม", "mass": 266, "category": "actinide", "phase": "solid", "row": 10, "col": 17, "period": 7, "group": null, "block": "f", "radioactive": true}, {"z": 104, "symbol": "Rf", "name": "Rutherfordium", "nameTh": "รัทเทอร์ฟอร์เดียม", "mass": 267, "category": "transition", "phase": "solid", "row": 7, "col": 4, "period": 7, "group": 4, "block": "d", "radioactive": true}, {"z": 105, "symbol": "Db", "name": "Dubnium", "nameTh": "ดุบเนียม", "mass": 268, "category": "transition", "phase": "solid", "row": 7, "col": 5, "period": 7, "group": 5, "block": "d", "radioactive": true}, {"z": 106, "symbol": "Sg", "name": "Seaborgium", "nameTh": "ซีบอร์เกียม", "mass": 269, "category": "transition", "phase": "solid", "row": 7, "col": 6, "period": 7, "group": 6, "block": "d", "radioactive": true}, {"z": 107, "symbol": "Bh", "name": "Bohrium", "nameTh": "โบห์เรียม", "mass": 270, "category": "transition", "phase": "solid", "row": 7, "col": 7, "period": 7, "group": 7, "block": "d", "radioactive": true}, {"z": 108, "symbol": "Hs", "name": "Hassium", "nameTh": "ฮัสเซียม", "mass": 269, "category": "transition", "phase": "solid", "row": 7, "col": 8, "period": 7, "group": 8, "block": "d", "radioactive": true}, {"z": 109, "symbol": "Mt", "name": "Meitnerium", "nameTh": "ไมต์เนเรียม", "mass": 278, "category": "unknown", "phase": "solid", "row": 7, "col": 9, "period": 7, "group": 9, "block": "d", "radioactive": true}, {"z": 110, "symbol": "Ds", "name": "Darmstadtium", "nameTh": "ดาร์มสตัดเทียม", "mass": 281, "category": "unknown", "phase": "solid", "row": 7, "col": 10, "period": 7, "group": 10, "block": "d", "radioactive": true}, {"z": 111, "symbol": "Rg", "name": "Roentgenium", "nameTh": "เรินต์เกเนียม", "mass": 282, "category": "unknown", "phase": "solid", "row": 7, "col": 11, "period": 7, "group": 11, "block": "d", "radioactive": true}, {"z": 112, "symbol": "Cn", "name": "Copernicium", "nameTh": "โคเปอร์นิเซียม", "mass": 285, "category": "unknown", "phase": "solid", "row": 7, "col": 12, "period": 7, "group": 12, "block": "d", "radioactive": true}, {"z": 113, "symbol": "Nh", "name": "Nihonium", "nameTh": "นิโฮเนียม", "mass": 286, "category": "unknown", "phase": "solid", "row": 7, "col": 13, "period": 7, "group": 13, "block": "p", "radioactive": true}, {"z": 114, "symbol": "Fl", "name": "Flerovium", "nameTh": "เฟลโรเวียม", "mass": 289, "category": "unknown", "phase": "solid", "row": 7, "col": 14, "period": 7, "group": 14, "block": "p", "radioactive": true}, {"z": 115, "symbol": "Mc", "name": "Moscovium", "nameTh": "มอสโคเวียม", "mass": 290, "category": "unknown", "phase": "solid", "row": 7, "col": 15, "period": 7, "group": 15, "block": "p", "radioactive": true}, {"z": 116, "symbol": "Lv", "name": "Livermorium", "nameTh": "ลิเวอร์มอเรียม", "mass": 293, "category": "unknown", "phase": "solid", "row": 7, "col": 16, "period": 7, "group": 16, "block": "p", "radioactive": true}, {"z": 117, "symbol": "Ts", "name": "Tennessine", "nameTh": "เทนเนสซีน", "mass": 294, "category": "unknown", "phase": "solid", "row": 7, "col": 17, "period": 7, "group": 17, "block": "p", "radioactive": true}, {"z": 118, "symbol": "Og", "name": "Oganesson", "nameTh": "โอกาเนสสอน", "mass": 294, "category": "unknown", "phase": "gas", "row": 7, "col": 18, "period": 7, "group": 18, "block": "p", "radioactive": true}];
+
+const REACTIONS = [{"pair": ["H", "O"], "equation": "2H₂ + O₂ → 2H₂O", "product": "น้ำ (Water)", "type": "synthesis / combustion", "conditions": "จุดประกาย (spark) หรือเปลวไฟ", "desc": "ปฏิกิริยาคายความร้อนรุนแรงมาก แก๊สไฮโดรเจนติดไฟในออกซิเจนเกิดเป็นน้ำ เป็นปฏิกิริยาที่ใช้ขับเคลื่อนจรวดบางประเภท"}, {"pair": ["H", "N"], "equation": "3H₂ + N₂ ⇌ 2NH₃", "product": "แอมโมเนีย (Ammonia)", "type": "synthesis (Haber process)", "conditions": "ตัวเร่งปฏิกิริยา Fe, อุณหภูมิ ~400–450°C, ความดันสูง", "desc": "กระบวนการฮาเบอร์-บอช ใช้ผลิตแอมโมเนียสำหรับปุ๋ยเคมีทั่วโลก"}, {"pair": ["H", "Cl"], "equation": "H₂ + Cl₂ → 2HCl", "product": "ไฮโดรเจนคลอไรด์ (Hydrogen chloride)", "type": "synthesis", "conditions": "แสง UV หรือเปลวไฟ (ระเบิดได้เมื่อโดนแสงจ้า)", "desc": "เมื่อละลายน้ำจะได้กรดไฮโดรคลอริก"}, {"pair": ["H", "F"], "equation": "H₂ + F₂ → 2HF", "product": "ไฮโดรเจนฟลูออไรด์ (Hydrogen fluoride)", "type": "synthesis", "conditions": "เกิดเองแม้ในที่มืดและเย็น รุนแรงมาก", "desc": "F₂ ว่องไวที่สุดในหมู่ธาตุ ทำปฏิกิริยากับ H₂ ได้ทันทีโดยไม่ต้องใช้ตัวกระตุ้น"}, {"pair": ["H", "Br"], "equation": "H₂ + Br₂ → 2HBr", "product": "ไฮโดรเจนโบรไมด์", "type": "synthesis", "conditions": "ความร้อนหรือตัวเร่งปฏิกิริยา", "desc": "ปฏิกิริยาช้ากว่า Cl₂ และ F₂ ตามแนวโน้มความว่องไวของหมู่ฮาโลเจน"}, {"pair": ["H", "I"], "equation": "H₂ + I₂ ⇌ 2HI", "product": "ไฮโดรเจนไอโอไดด์", "type": "synthesis (equilibrium)", "conditions": "ความร้อนสูง, ปฏิกิริยาผันกลับได้", "desc": "เป็นปฏิกิริยาสมดุลคลาสสิกที่ใช้สอนเรื่อง equilibrium ในวิชาเคมี"}, {"pair": ["H", "S"], "equation": "H₂ + S → H₂S", "product": "ไฮโดรเจนซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "แก๊สมีกลิ่นเหม็นคล้ายไข่เน่า เป็นพิษ"}, {"pair": ["H", "Na"], "equation": "2Na + H₂ → 2NaH", "product": "โซเดียมไฮไดรด์", "type": "synthesis", "conditions": "ความร้อน ~300°C", "desc": "เกิด saline hydride ที่มีไฮโดรเจนเป็นไอออนลบ (H⁻)"}, {"pair": ["H", "Ca"], "equation": "Ca + H₂ → CaH₂", "product": "แคลเซียมไฮไดรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ใช้เป็นสารดูดความชื้นและแหล่งไฮโดรเจนในห้องปฏิบัติการ"}, {"pair": ["Na", "Cl"], "equation": "2Na + Cl₂ → 2NaCl", "product": "โซเดียมคลอไรด์ (เกลือแกง)", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง เกิดแสงเหลืองจ้า", "desc": "โลหะโซเดียมติดไฟในแก๊สคลอรีนอย่างรุนแรง ให้เปลวไฟสีเหลืองและควันขาวของ NaCl"}, {"pair": ["Na", "O"], "equation": "2Na + O₂ → Na₂O₂", "product": "โซเดียมเปอร์ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ/ออกซิเจนส่วนเกิน", "desc": "โซเดียมที่เผาไหม้ในออกซิเจนมากเกินพอจะให้เปอร์ออกไซด์เป็นผลิตภัณฑ์หลัก ไม่ใช่ออกไซด์ธรรมดา"}, {"pair": ["Na", "S"], "equation": "2Na + S → Na₂S", "product": "โซเดียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ปฏิกิริยาโลหะแอลคาไลกับกำมะถันโดยตรง"}, {"pair": ["K", "O"], "equation": "K + O₂ → KO₂", "product": "โพแทสเซียมซูเปอร์ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "โพแทสเซียมเผาไหม้ให้ซูเปอร์ออกไซด์เป็นผลิตภัณฑ์หลัก ต่างจากโซเดียมที่ให้เปอร์ออกไซด์"}, {"pair": ["K", "Cl"], "equation": "2K + Cl₂ → 2KCl", "product": "โพแทสเซียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้เป็นสารทดแทนเกลือและปุ๋ยโพแทช"}, {"pair": ["Li", "O"], "equation": "4Li + O₂ → 2Li₂O", "product": "ลิเทียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "ต่างจากโลหะแอลคาไลตัวอื่น ลิเทียมให้ออกไซด์ปกติ (ไม่ใช่เปอร์ออกไซด์) เป็นผลิตภัณฑ์หลัก"}, {"pair": ["Li", "N"], "equation": "6Li + N₂ → 2Li₃N", "product": "ลิเทียมไนไตรด์", "type": "synthesis", "conditions": "อุณหภูมิห้อง", "desc": "ลิเทียมเป็นโลหะแอลคาไลชนิดเดียวที่ทำปฏิกิริยากับแก๊สไนโตรเจนได้โดยตรงที่อุณหภูมิห้อง"}, {"pair": ["Mg", "O"], "equation": "2Mg + O₂ → 2MgO", "product": "แมกนีเซียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ ให้แสงสีขาวจ้า", "desc": "ปฏิกิริยาคลาสสิกที่ใช้สาธิตในห้องเรียน แสงจ้าจากการเผาแมกนีเซียมเคยใช้เป็นแฟลชถ่ายภาพในอดีต"}, {"pair": ["Mg", "N"], "equation": "3Mg + N₂ → Mg₃N₂", "product": "แมกนีเซียมไนไตรด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "เกิดร่วมกับ MgO เมื่อแมกนีเซียมเผาไหม้ในอากาศ เพราะทำปฏิกิริยากับทั้ง O₂ และ N₂"}, {"pair": ["Mg", "Cl"], "equation": "Mg + Cl₂ → MgCl₂", "product": "แมกนีเซียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้ในอุตสาหกรรมผลิตโลหะแมกนีเซียมด้วยกระบวนการอิเล็กโทรไลซิส"}, {"pair": ["Mg", "S"], "equation": "Mg + S → MgS", "product": "แมกนีเซียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ของแข็งสีเทาที่ไวต่อความชื้น"}, {"pair": ["Ca", "O"], "equation": "2Ca + O₂ → 2CaO", "product": "แคลเซียมออกไซด์ (ปูนขาว)", "type": "synthesis", "conditions": "เผาไหม้", "desc": "CaO เป็นสารตั้งต้นสำคัญในอุตสาหกรรมปูนซีเมนต์"}, {"pair": ["Ca", "Cl"], "equation": "Ca + Cl₂ → CaCl₂", "product": "แคลเซียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้ละลายน้ำแข็งบนถนนและเป็นสารดูดความชื้น"}, {"pair": ["Ba", "O"], "equation": "2Ba + O₂ → 2BaO", "product": "แบเรียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศแห้ง", "desc": "หากมีออกซิเจนมากเกินพอที่ความดันสูง จะได้ BaO₂ (แบเรียมเปอร์ออกไซด์) แทน"}, {"pair": ["Al", "O"], "equation": "4Al + 3O₂ → 2Al₂O₃", "product": "อะลูมิเนียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (ผงอะลูมิเนียมติดไฟรุนแรง)", "desc": "ชั้นออกไซด์บาง ๆ ที่เกิดขึ้นเองตามธรรมชาติบนผิวอะลูมิเนียมช่วยป้องกันการกัดกร่อนเพิ่มเติม (passivation)"}, {"pair": ["Al", "Cl"], "equation": "2Al + 3Cl₂ → 2AlCl₃", "product": "อะลูมิเนียมคลอไรด์", "type": "synthesis (covalent, dimerizes to Al₂Cl₆)", "conditions": "ความร้อน", "desc": "ในสถานะไอจะรวมตัวเป็นโมเลกุลคู่ Al₂Cl₆ ใช้เป็นตัวเร่งปฏิกิริยา Friedel-Crafts"}, {"pair": ["Al", "S"], "equation": "2Al + 3S → Al₂S₃", "product": "อะลูมิเนียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "สลายตัวอย่างรวดเร็วเมื่อโดนน้ำหรือความชื้นในอากาศ ให้แก๊ส H₂S"}, {"pair": ["Al", "Br"], "equation": "2Al + 3Br₂ → 2AlBr₃", "product": "อะลูมิเนียมโบรไมด์", "type": "synthesis", "conditions": "ปฏิกิริยารุนแรงที่อุณหภูมิห้อง", "desc": "ผงอะลูมิเนียมทำปฏิกิริยากับโบรมีนเหลวอย่างรุนแรง มีเปลวไฟและควัน"}, {"pair": ["Fe", "O"], "equation": "4Fe + 3O₂ → 2Fe₂O₃", "product": "เหล็ก(III) ออกไซด์ (สนิม)", "type": "synthesis / oxidation", "conditions": "มีความชื้นร่วมด้วยในธรรมชาติ (สนิมแท้ต้องมีทั้ง O₂ และ H₂O)", "desc": "เมื่อเหล็กเผาไหม้ในออกซิเจนบริสุทธิ์ (เช่น สปาร์กเลอร์) มักได้ Fe₃O₄ (เหล็กออกไซด์ผสม Fe(II)/Fe(III))"}, {"pair": ["Fe", "S"], "equation": "Fe + S → FeS", "product": "เหล็ก(II) ซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ปฏิกิริยาคลาสสิกในห้องแล็บที่แสดงว่าสารประกอบมีสมบัติต่างจากธาตุตั้งต้นอย่างสิ้นเชิง"}, {"pair": ["Fe", "Cl"], "equation": "2Fe + 3Cl₂ → 2FeCl₃", "product": "เหล็ก(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน เหล็กร้อนแดงในแก๊สคลอรีน", "desc": "ของแข็งสีน้ำตาลดำ ใช้ในการบำบัดน้ำเสียและแกะสลักแผ่นวงจร PCB"}, {"pair": ["Cu", "O"], "equation": "2Cu + O₂ → 2CuO", "product": "ทองแดง(II) ออกไซด์", "type": "synthesis", "conditions": "เผาในอากาศที่อุณหภูมิสูง", "desc": "ที่อุณหภูมิสูงกว่า 1000°C จะได้ Cu₂O (ทองแดง(I) ออกไซด์สีแดง) แทน"}, {"pair": ["Cu", "S"], "equation": "Cu + S → CuS", "product": "ทองแดง(II) ซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของแข็งสีดำ พบในแร่ธรรมชาติบางชนิด"}, {"pair": ["Cu", "Cl"], "equation": "Cu + Cl₂ → CuCl₂", "product": "ทองแดง(II) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ให้เปลวไฟสีเขียวเมื่อเผา ใช้ในดอกไม้ไฟ"}, {"pair": ["Zn", "O"], "equation": "2Zn + O₂ → 2ZnO", "product": "ซิงค์ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ผงสีขาวใช้ในครีมกันแดดและยาทาแก้ผื่น"}, {"pair": ["Zn", "S"], "equation": "Zn + S → ZnS", "product": "ซิงค์ซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "มีสมบัติเรืองแสง (phosphorescent) ใช้ในหน้าปัดเรืองแสง"}, {"pair": ["Zn", "Cl"], "equation": "Zn + Cl₂ → ZnCl₂", "product": "ซิงค์คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ใช้เป็นฟลักซ์ในการบัดกรีโลหะ"}, {"pair": ["Ag", "S"], "equation": "2Ag + S → Ag₂S", "product": "ซิลเวอร์ซัลไฟด์", "type": "synthesis (tarnishing)", "conditions": "อุณหภูมิห้อง ทำปฏิกิริยาช้า ๆ กับ H₂S ในอากาศ", "desc": "คือคราบหมองสีดำที่เกิดบนเครื่องประดับเงินเมื่อสัมผัสสารประกอบกำมะถันในอากาศ"}, {"pair": ["Pb", "O"], "equation": "2Pb + O₂ → 2PbO", "product": "ตะกั่ว(II) ออกไซด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "เผาต่อที่อุณหภูมิสูงขึ้นจะได้ Pb₃O₄ (ตะกั่วแดง/red lead) ซึ่งเป็นสารประกอบผสมออกซิเดชันสเตต"}, {"pair": ["Sn", "O"], "equation": "Sn + O₂ → SnO₂", "product": "ดีบุก(IV) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "ใช้เป็นสารเคลือบกระจกนำไฟฟ้าโปร่งใส"}, {"pair": ["Ti", "O"], "equation": "Ti + O₂ → TiO₂", "product": "ไทเทเนียมไดออกไซด์", "type": "synthesis", "conditions": "ความร้อนสูงมาก", "desc": "เม็ดสีขาวที่ใช้กันแพร่หลายที่สุดในโลก พบในสี ยาสีฟัน และครีมกันแดด"}, {"pair": ["W", "C"], "equation": "W + C → WC", "product": "ทังสเตนคาร์ไบด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก (>1400°C)", "desc": "วัสดุแข็งมากใกล้เคียงเพชร ใช้ทำดอกสว่านและเครื่องมือตัด"}, {"pair": ["C", "O"], "equation": "C + O₂ → CO₂  (หรือ 2C + O₂ → 2CO เมื่อออกซิเจนไม่พอ)", "product": "คาร์บอนไดออกไซด์ / คาร์บอนมอนอกไซด์", "type": "combustion", "conditions": "เผาไหม้สมบูรณ์ให้ CO₂, เผาไหม้ไม่สมบูรณ์ให้ CO", "desc": "ผลิตภัณฑ์ขึ้นกับปริมาณออกซิเจนที่มีให้ทำปฏิกิริยา เป็นหลักการสำคัญของการเผาไหม้เชื้อเพลิง"}, {"pair": ["C", "H"], "equation": "C + 2H₂ → CH₄", "product": "มีเทน", "type": "synthesis", "conditions": "ตัวเร่งปฏิกิริยา, ความร้อนและความดันสูง", "desc": "ในทางปฏิบัติมีเทนส่วนใหญ่ได้จากแหล่งก๊าซธรรมชาติ ไม่ได้สังเคราะห์จากธาตุโดยตรง"}, {"pair": ["Si", "O"], "equation": "Si + O₂ → SiO₂", "product": "ซิลิคอนไดออกไซด์ (ทราย/ควอตซ์)", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "เป็นองค์ประกอบหลักของทรายและแก้ว"}, {"pair": ["N", "O"], "equation": "N₂ + O₂ → 2NO", "product": "ไนโตรเจนมอนอกไซด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก เช่น ฟ้าผ่า หรือในเครื่องยนต์", "desc": "NO ทำปฏิกิริยาต่อกับ O₂ ในอากาศได้เป็น NO₂ ซึ่งเป็นสารตั้งต้นของฝนกรดและหมอกควัน"}, {"pair": ["S", "O"], "equation": "S + O₂ → SO₂", "product": "ซัลเฟอร์ไดออกไซด์", "type": "combustion", "conditions": "เผาไหม้", "desc": "เป็นสาเหตุหลักของฝนกรดเมื่อทำปฏิกิริยาต่อกับน้ำในบรรยากาศ"}, {"pair": ["P", "O"], "equation": "4P + 5O₂ → P₄O₁₀ (P₂O₅)", "product": "ฟอสฟอรัสเพนทอกไซด์", "type": "combustion", "conditions": "เผาไหม้ในอากาศ", "desc": "ดูดความชื้นได้ดีมาก ใช้เป็นสารทำแห้งในห้องปฏิบัติการ"}, {"pair": ["P", "Cl"], "equation": "2P + 3Cl₂ → 2PCl₃  (หรือ 2P + 5Cl₂ → 2PCl₅ เมื่อ Cl₂ มากเกินพอ)", "product": "ฟอสฟอรัสไตรคลอไรด์ / เพนทาคลอไรด์", "type": "synthesis", "conditions": "อัตราส่วนของคลอรีนกำหนดผลิตภัณฑ์", "desc": "ตัวอย่างชัดเจนว่าอัตราส่วนธาตุตั้งต้นเปลี่ยนผลิตภัณฑ์ได้"}, {"pair": ["Br", "Cl"], "equation": "Br₂ + Cl₂ → 2BrCl", "product": "โบรมีนคลอไรด์ (interhalogen)", "type": "synthesis", "conditions": "อุณหภูมิห้อง", "desc": "สารประกอบระหว่างฮาโลเจนสองชนิด ไม่เสถียรมากและสลายตัวกลับเป็นธาตุตั้งต้นได้ง่าย"}, {"pair": ["I", "Cl"], "equation": "I₂ + Cl₂ → 2ICl", "product": "ไอโอดีนคลอไรด์", "type": "synthesis", "conditions": "อุณหภูมิห้อง", "desc": "ของแข็งสีแดงเข้ม ใช้เป็นรีเอเจนต์ในเคมีอินทรีย์"}, {"pair": ["Xe", "F"], "equation": "Xe + F₂ → XeF₂ (หรือ XeF₄, XeF₆ เมื่อเพิ่มอัตราส่วน F₂ และความดัน)", "product": "ซีนอนฟลูออไรด์", "type": "synthesis", "conditions": "แสง UV หรือความร้อน/ความดันสูง", "desc": "หนึ่งในตัวอย่างที่มีชื่อเสียงที่สุดที่พิสูจน์ว่าแก๊สมีตระกูล (noble gas) ก็ทำปฏิกิริยาเคมีได้ ทำลายความเชื่อเดิมที่ว่าธาตุหมู่ 18 เฉื่อยสนิท"}, {"pair": ["Au", "O"], "equation": "ไม่เกิดปฏิกิริยาโดยตรง (No direct reaction)", "product": "—", "type": "none", "conditions": "—", "desc": "ทองคำเป็นโลหะมีตระกูล (noble metal) แทบไม่ทำปฏิกิริยากับออกซิเจนแม้ที่อุณหภูมิสูง จึงไม่ขึ้นสนิมหรือหมองในอากาศ"}, {"pair": ["He", "O"], "equation": "ไม่เกิดปฏิกิริยา (No reaction)", "product": "—", "type": "none", "conditions": "—", "desc": "ฮีเลียมมีเวเลนซ์อิเล็กตรอนเต็มเปลือกอยู่แล้ว จึงไม่ทำปฏิกิริยาเคมีกับธาตุใดในสภาวะปกติเลย"}, {"pair": ["Ne", "F"], "equation": "ไม่เกิดปฏิกิริยา (No reaction)", "product": "—", "type": "none", "conditions": "—", "desc": "นีออนไม่เคยถูกพิสูจน์ว่าสร้างสารประกอบเคมีที่เสถียรได้ในสภาวะปกติ ต่างจาก Xe และ Kr ซึ่งพอมีสารประกอบให้ศึกษา"}, {"pair": ["Li", "F"], "equation": "2Li + F₂ → 2LiF", "product": "ลิเทียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "เกลือฟลูออไรด์ที่ละลายน้ำได้น้อยกว่าเกลือแอลคาไลอื่น เพราะไอออนทั้งคู่มีขนาดใกล้เคียงกัน"}, {"pair": ["Li", "Cl"], "equation": "2Li + Cl₂ → 2LiCl", "product": "ลิเทียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้เป็นสารดูดความชื้นและอิเล็กโทรไลต์ในแบตเตอรี่บางชนิด"}, {"pair": ["Li", "Br"], "equation": "2Li + Br₂ → 2LiBr", "product": "ลิเทียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "อุณหภูมิห้อง", "desc": "ดูดความชื้นได้ดีมาก ใช้ในระบบทำความเย็นแบบดูดซับ"}, {"pair": ["Li", "I"], "equation": "2Li + I₂ → 2LiI", "product": "ลิเทียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อนเล็กน้อย", "desc": "ใช้เป็นอิเล็กโทรไลต์ในแบตเตอรี่ลิเทียมไอโอดีนของเครื่องกระตุ้นหัวใจ"}, {"pair": ["Li", "S"], "equation": "2Li + S → Li₂S", "product": "ลิเทียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "สารตั้งต้นสำคัญในแบตเตอรี่ลิเทียม-ซัลเฟอร์"}, {"pair": ["Li", "H"], "equation": "2Li + H₂ → 2LiH", "product": "ลิเทียมไฮไดรด์", "type": "synthesis", "conditions": "ความร้อน ~500–700°C", "desc": "ของแข็งเบาที่สุดในบรรดาไฮไดรด์ ใช้เก็บไฮโดรเจนและในอุตสาหกรรมอวกาศ"}, {"pair": ["Na", "F"], "equation": "2Na + F₂ → 2NaF", "product": "โซเดียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้เติมในยาสีฟันและน้ำประปาเพื่อป้องกันฟันผุ"}, {"pair": ["Na", "Br"], "equation": "2Na + Br₂ → 2NaBr", "product": "โซเดียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้ในอุตสาหกรรมถ่ายภาพและยาระงับประสาทในอดีต"}, {"pair": ["Na", "I"], "equation": "2Na + I₂ → 2NaI", "product": "โซเดียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อนเล็กน้อย", "desc": "ใช้เติมเกลือเสริมไอโอดีนเพื่อป้องกันโรคคอพอก"}, {"pair": ["K", "F"], "equation": "2K + F₂ → 2KF", "product": "โพแทสเซียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้ในอุตสาหกรรมแก้วกัดกรดและยาฆ่าแมลงบางชนิด"}, {"pair": ["K", "Br"], "equation": "2K + Br₂ → 2KBr", "product": "โพแทสเซียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "เคยใช้เป็นยากันชักและยาระงับประสาทในอดีต"}, {"pair": ["K", "I"], "equation": "2K + I₂ → 2KI", "product": "โพแทสเซียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อนเล็กน้อย", "desc": "ใช้ในเม็ดยาป้องกันรังสีไอโอดีน-131 และเกลือเสริมไอโอดีน"}, {"pair": ["K", "S"], "equation": "2K + S → K₂S", "product": "โพแทสเซียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของแข็งไวต่อความชื้นและอากาศมาก"}, {"pair": ["K", "H"], "equation": "2K + H₂ → 2KH", "product": "โพแทสเซียมไฮไดรด์", "type": "synthesis", "conditions": "ความร้อน ~200°C", "desc": "เบสแก่มาก ทำปฏิกิริยารุนแรงกับน้ำให้ H₂"}, {"pair": ["Rb", "F"], "equation": "2Rb + F₂ → 2RbF", "product": "รูบิเดียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "เกลือฮาไลด์มาตรฐานของรูบิเดียม"}, {"pair": ["Rb", "Cl"], "equation": "2Rb + Cl₂ → 2RbCl", "product": "รูบิเดียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้ในงานวิจัยชีวโมเลกุลและอิเล็กโทรไลต์"}, {"pair": ["Rb", "Br"], "equation": "2Rb + Br₂ → 2RbBr", "product": "รูบิเดียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้ในอุปกรณ์ออปติกอินฟราเรด"}, {"pair": ["Rb", "I"], "equation": "2Rb + I₂ → 2RbI", "product": "รูบิเดียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อนเล็กน้อย", "desc": "ใช้เป็นอิเล็กโทรไลต์แข็งในงานวิจัย"}, {"pair": ["Rb", "O"], "equation": "Rb + O₂ → RbO₂", "product": "รูบิเดียมซูเปอร์ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "เช่นเดียวกับ K และ Cs, Rb ให้ซูเปอร์ออกไซด์เป็นผลิตภัณฑ์หลักเมื่อเผาในออกซิเจนส่วนเกิน"}, {"pair": ["Rb", "S"], "equation": "2Rb + S → Rb₂S", "product": "รูบิเดียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ไวต่อความชื้นมาก สลายตัวให้ H₂S เมื่อโดนน้ำ"}, {"pair": ["Rb", "H"], "equation": "2Rb + H₂ → 2RbH", "product": "รูบิเดียมไฮไดรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "saline hydride ทำปฏิกิริยารุนแรงกับน้ำ"}, {"pair": ["Cs", "F"], "equation": "2Cs + F₂ → 2CsF", "product": "ซีเซียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรงมาก", "desc": "ดูดความชื้นสูงมาก ใช้เป็นแหล่งฟลูออไรด์ในเคมีอินทรีย์"}, {"pair": ["Cs", "Cl"], "equation": "2Cs + Cl₂ → 2CsCl", "product": "ซีเซียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้ทำสารละลายไล่ระดับความหนาแน่นในการปั่นเหวี่ยง DNA"}, {"pair": ["Cs", "Br"], "equation": "2Cs + Br₂ → 2CsBr", "product": "ซีเซียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "ปฏิกิริยารุนแรง", "desc": "ใช้ทำหน้าต่างอุปกรณ์สเปกโทรสโกปีอินฟราเรด"}, {"pair": ["Cs", "I"], "equation": "2Cs + I₂ → 2CsI", "product": "ซีเซียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อนเล็กน้อย", "desc": "ใช้เป็นสารเรืองแสงในหัววัดรังสีแกมมา"}, {"pair": ["Cs", "O"], "equation": "Cs + O₂ → CsO₂", "product": "ซีเซียมซูเปอร์ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ (ติดไฟได้เองในอากาศ)", "desc": "ซีเซียมโลหะไวไฟมากที่สุดในกลุ่มแอลคาไลที่เสถียร ติดไฟได้เองเมื่อสัมผัสอากาศ"}, {"pair": ["Cs", "S"], "equation": "2Cs + S → Cs₂S", "product": "ซีเซียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ไวต่อความชื้นมาก"}, {"pair": ["Cs", "H"], "equation": "2Cs + H₂ → 2CsH", "product": "ซีเซียมไฮไดรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "saline hydride ที่มีความหนาแน่นสูงที่สุดในกลุ่มนี้"}, {"pair": ["Fr", "Cl"], "equation": "Fr + ½Cl₂ → FrCl (คาดการณ์)", "product": "แฟรนเซียมคลอไรด์ (ยังไม่ยืนยันด้วยการทดลองจริง)", "type": "synthesis (คาดการณ์ตามแนวโน้มหมู่)", "conditions": "กัมมันตรังสีสูงมาก อายุครึ่งชีวิตสั้นมาก", "desc": "แฟรนเซียมมีอายุครึ่งชีวิตสั้นเกินกว่าจะแยกสารประกอบมาศึกษาได้จริงในปริมาณที่ตรวจวัดได้ ข้อมูลนี้เป็นการคาดการณ์ตามแนวโน้มของหมู่ 1 เท่านั้น"}, {"pair": ["Be", "O"], "equation": "2Be + O₂ → 2BeO", "product": "เบริลเลียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "BeO นำความร้อนได้ดีมากแต่มีพิษร้ายแรงหากสูดดมฝุ่นละออง"}, {"pair": ["Be", "Cl"], "equation": "Be + Cl₂ → BeCl₂", "product": "เบริลเลียมคลอไรด์", "type": "synthesis (covalent)", "conditions": "ความร้อนสูง", "desc": "มีพันธะโคเวเลนต์มากกว่าคลอไรด์แอลคาไลน์เอิร์ทตัวอื่นเพราะ Be²⁺ มีขนาดเล็กมาก"}, {"pair": ["Be", "N"], "equation": "3Be + N₂ → Be₃N₂", "product": "เบริลเลียมไนไตรด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก (>1000°C)", "desc": "ใช้เป็นวัสดุทนไฟและฉนวนไฟฟ้าในงานอิเล็กทรอนิกส์เฉพาะทาง"}, {"pair": ["Be", "S"], "equation": "Be + S → BeS", "product": "เบริลเลียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ไวต่อความชื้น สลายตัวให้ H₂S"}, {"pair": ["Mg", "F"], "equation": "Mg + F₂ → MgF₂", "product": "แมกนีเซียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้เคลือบเลนส์กันแสงสะท้อนเพราะโปร่งใสตั้งแต่รังสี UV ถึงอินฟราเรด"}, {"pair": ["Mg", "Br"], "equation": "Mg + Br₂ → MgBr₂", "product": "แมกนีเซียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ดูดความชื้นได้ดี ใช้ในเคมีอินทรีย์สังเคราะห์"}, {"pair": ["Mg", "I"], "equation": "Mg + I₂ → MgI₂", "product": "แมกนีเซียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ไวต่อความชื้นมาก ใช้เป็นรีเอเจนต์ในห้องปฏิบัติการ"}, {"pair": ["Ca", "F"], "equation": "Ca + F₂ → CaF₂", "product": "แคลเซียมฟลูออไรด์ (ฟลูออไรต์)", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "พบในธรรมชาติเป็นแร่ฟลูออไรต์ เป็นแหล่งฟลูออรีนหลักในอุตสาหกรรม"}, {"pair": ["Ca", "Br"], "equation": "Ca + Br₂ → CaBr₂", "product": "แคลเซียมโบรไมด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้ในของไหลขุดเจาะน้ำมันและสารดับเพลิง"}, {"pair": ["Ca", "I"], "equation": "Ca + I₂ → CaI₂", "product": "แคลเซียมไอโอไดด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ดูดความชื้นสูง ใช้เป็นแหล่งไอโอดีนในอาหารสัตว์"}, {"pair": ["Ca", "S"], "equation": "Ca + S → CaS", "product": "แคลเซียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "เรืองแสงได้เมื่อเจือด้วยธาตุหายาก ใช้ในสีเรืองแสงในที่มืด"}, {"pair": ["Ca", "N"], "equation": "3Ca + N₂ → Ca₃N₂", "product": "แคลเซียมไนไตรด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ทำปฏิกิริยากับน้ำอย่างรุนแรงให้แอมโมเนีย"}, {"pair": ["Sr", "O"], "equation": "2Sr + O₂ → 2SrO", "product": "สตรอนเชียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ดูดความชื้นและ CO₂ จากอากาศได้ง่าย"}, {"pair": ["Sr", "F"], "equation": "Sr + F₂ → SrF₂", "product": "สตรอนเชียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้ในเลนส์ออปติกพิเศษที่ต้องการการส่องผ่านรังสี UV สูง"}, {"pair": ["Sr", "Cl"], "equation": "Sr + Cl₂ → SrCl₂", "product": "สตรอนเชียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ให้เปลวไฟสีแดงเข้ม ใช้ในดอกไม้ไฟและยาสีฟันลดอาการเสียวฟัน"}, {"pair": ["Sr", "S"], "equation": "Sr + S → SrS", "product": "สตรอนเชียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ใช้เป็นสารเรืองแสงพื้นฐานสำหรับสีเรืองแสงในที่มืด"}, {"pair": ["Sr", "N"], "equation": "3Sr + N₂ → Sr₃N₂", "product": "สตรอนเชียมไนไตรด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "สลายตัวในน้ำให้แอมโมเนียและ Sr(OH)₂"}, {"pair": ["Ba", "F"], "equation": "Ba + F₂ → BaF₂", "product": "แบเรียมฟลูออไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ใช้ทำหน้าต่างกล้องโทรทรรศน์อินฟราเรดและรังสีเอกซ์"}, {"pair": ["Ba", "Cl"], "equation": "Ba + Cl₂ → BaCl₂", "product": "แบเรียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "ให้เปลวไฟสีเขียวอมเหลือง ใช้ในดอกไม้ไฟและการวิเคราะห์น้ำเสีย"}, {"pair": ["Ba", "S"], "equation": "Ba + S → BaS", "product": "แบเรียมซัลไฟด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "สารตั้งต้นสำคัญในการผลิตสารประกอบแบเรียมอื่น ๆ"}, {"pair": ["Ba", "N"], "equation": "3Ba + N₂ → Ba₃N₂", "product": "แบเรียมไนไตรด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ไวต่อความชื้นมาก สลายตัวให้แอมโมเนีย"}, {"pair": ["Ra", "Cl"], "equation": "Ra + Cl₂ → RaCl₂", "product": "เรเดียมคลอไรด์", "type": "synthesis (ionic)", "conditions": "ความร้อน", "desc": "สารประกอบเรเดียมชนิดแรกที่มารี กูรีแยกได้สำเร็จในปี 1898 แม้จะกัมมันตรังสีสูงมาก"}, {"pair": ["Ra", "O"], "equation": "2Ra + O₂ → 2RaO", "product": "เรเดียมออกไซด์ (ข้อมูลจำกัดเพราะกัมมันตรังสีสูง)", "type": "synthesis (คาดการณ์ตามแนวโน้มหมู่)", "conditions": "เผาไหม้ในอากาศ", "desc": "เรเดียมมีสมบัติคล้ายแบเรียมมาก แต่มีการศึกษาทดลองจำกัดมากเนื่องจากกัมมันตรังสีอันตราย"}, {"pair": ["Sc", "O"], "equation": "4Sc + 3O₂ → 2Sc₂O₃", "product": "สแกนเดียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "ของแข็งสีขาว เสถียรมาก ใช้ในหลอดไฟความเข้มสูง"}, {"pair": ["Ti", "Cl"], "equation": "Ti + 2Cl₂ → TiCl₄", "product": "ไทเทเนียมเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของเหลวระเหิดควันในอากาศชื้น เป็นสารตั้งต้นสำคัญในกระบวนการครอลล์ผลิตโลหะไทเทเนียม"}, {"pair": ["V", "O"], "equation": "4V + 5O₂ → 2V₂O₅", "product": "วานาเดียมเพนทอกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "ตัวเร่งปฏิกิริยาสำคัญในการผลิตกรดซัลฟิวริก (Contact Process)"}, {"pair": ["Cr", "O"], "equation": "4Cr + 3O₂ → 2Cr₂O₃", "product": "โครเมียม(III) ออกไซด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "เม็ดสีเขียวที่เสถียรมาก ใช้ในสีและเซรามิก เป็นชั้นออกไซด์ป้องกันสนิมของสเตนเลส"}, {"pair": ["Cr", "Cl"], "equation": "2Cr + 3Cl₂ → 2CrCl₃", "product": "โครเมียม(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ของแข็งสีม่วงแดง ใช้เป็นตัวเร่งปฏิกิริยาในเคมีอินทรีย์"}, {"pair": ["Mn", "O"], "equation": "3Mn + 2O₂ → Mn₃O₄", "product": "แมงกานีส(II,III) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "ออกไซด์ผสมสถานะออกซิเดชัน เป็นผลิตภัณฑ์หลักเมื่อเผาแมงกานีสในอากาศ"}, {"pair": ["Mn", "Cl"], "equation": "Mn + Cl₂ → MnCl₂", "product": "แมงกานีส(II) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ใช้เป็นสารตั้งต้นผลิตปุ๋ยและอาหารเสริมสัตว์"}, {"pair": ["Co", "O"], "equation": "3Co + 2O₂ → Co₃O₄", "product": "โคบอลต์(II,III) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "เม็ดสีน้ำเงินโบราณ (cobalt blue) ใช้ในเซรามิกและแก้วมานานนับพันปี"}, {"pair": ["Co", "Cl"], "equation": "Co + Cl₂ → CoCl₂", "product": "โคบอลต์(II) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "เปลี่ยนสีตามความชื้น (ชมพูเมื่อชื้น ฟ้าเมื่อแห้ง) จึงใช้เป็นซิลิกาเจลบอกความชื้น"}, {"pair": ["Ni", "O"], "equation": "2Ni + O₂ → 2NiO", "product": "นิกเกิล(II) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "ของแข็งสีเขียว ใช้ในแบตเตอรี่นิกเกิล-แคดเมียมและเซรามิก"}, {"pair": ["Ni", "Cl"], "equation": "Ni + Cl₂ → NiCl₂", "product": "นิกเกิล(II) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของแข็งสีเหลืองในรูปไร้น้ำ ใช้ในการชุบนิกเกิล"}, {"pair": ["Ni", "S"], "equation": "Ni + S → NiS", "product": "นิกเกิล(II) ซัลไฟด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "พบในแร่นิกเกิลธรรมชาติหลายชนิด"}, {"pair": ["Y", "O"], "equation": "4Y + 3O₂ → 2Y₂O₃", "product": "อิตเทรียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้ผลิตสารเรืองแสงสีแดงในจอโทรทัศน์ CRT รุ่นเก่าและ YAG เลเซอร์"}, {"pair": ["Zr", "O"], "equation": "Zr + O₂ → ZrO₂", "product": "เซอร์โคเนียมไดออกไซด์ (เซอร์โคเนีย)", "type": "synthesis", "conditions": "เผาไหม้ (ผงเซอร์โคเนียมติดไฟง่ายมาก)", "desc": "ทนความร้อนสูงมาก ใช้ทำเซรามิกทนไฟและเพชรเทียม (cubic zirconia)"}, {"pair": ["Zr", "Cl"], "equation": "Zr + 2Cl₂ → ZrCl₄", "product": "เซอร์โคเนียมเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "สารตั้งต้นในการผลิตโลหะเซอร์โคเนียมบริสุทธิ์"}, {"pair": ["Nb", "O"], "equation": "4Nb + 5O₂ → 2Nb₂O₅", "product": "ไนโอเบียมเพนทอกไซด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ใช้ผลิตแก้วดัชนีหักเหแสงสูงและตัวเก็บประจุ"}, {"pair": ["Mo", "O"], "equation": "2Mo + 3O₂ → 2MoO₃", "product": "โมลิบดีนัมไตรออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "ตัวเร่งปฏิกิริยาสำคัญในอุตสาหกรรมปิโตรเคมี"}, {"pair": ["Tc", "O"], "equation": "4Tc + 7O₂ → 2Tc₂O₇", "product": "เทคนีเชียมเฮปทอกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "เทคนีเชียมเป็นธาตุกัมมันตรังสีสังเคราะห์ ศึกษาได้เฉพาะในปริมาณเล็กน้อยของห้องปฏิบัติการ"}, {"pair": ["Ru", "O"], "equation": "Ru + 2O₂ → RuO₄", "product": "รูทีเนียมเตตระออกไซด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของเหลวระเหิดง่าย เป็นพิษและระเบิดได้ ต่างจากโลหะมีตระกูลอื่นที่มักไม่ทำปฏิกิริยากับ O₂ ง่าย"}, {"pair": ["Rh", "O"], "equation": "4Rh + 3O₂ → 2Rh₂O₃", "product": "โรเดียม(III) ออกไซด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก", "desc": "โรเดียมค่อนข้างเฉื่อย ต้องใช้ความร้อนสูงกว่าโลหะทรานซิชันทั่วไปมากจึงจะเกิดออกไซด์"}, {"pair": ["Pd", "O"], "equation": "2Pd + O₂ → 2PdO", "product": "แพลเลเดียม(II) ออกไซด์", "type": "synthesis", "conditions": "ความร้อน ~350–850°C", "desc": "ใช้เป็นตัวเร่งปฏิกิริยาในอุตสาหกรรมเคมี"}, {"pair": ["Cd", "O"], "equation": "2Cd + O₂ → 2CdO", "product": "แคดเมียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (ให้เปลวไฟสีน้ำตาลแดง)", "desc": "เป็นพิษ ใช้ในแบตเตอรี่นิกเกิล-แคดเมียมและสารกึ่งตัวนำบางชนิด"}, {"pair": ["Hf", "O"], "equation": "Hf + O₂ → HfO₂", "product": "แฮฟเนียมไดออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (ผงแฮฟเนียมติดไฟง่าย)", "desc": "ใช้เป็นชั้นฉนวนเกตในทรานซิสเตอร์ยุคใหม่แทนซิลิคอนไดออกไซด์"}, {"pair": ["Ta", "O"], "equation": "4Ta + 5O₂ → 2Ta₂O₅", "product": "แทนทาลัมเพนทอกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "ใช้ทำตัวเก็บประจุแทนทาลัมในอุปกรณ์อิเล็กทรอนิกส์"}, {"pair": ["W", "O"], "equation": "2W + 3O₂ → 2WO₃", "product": "ทังสเตนไตรออกไซด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "เม็ดสีเหลือง ใช้ในกระจกเปลี่ยนสีอัตโนมัติ (electrochromic glass)"}, {"pair": ["Re", "O"], "equation": "4Re + 7O₂ → 2Re₂O₇", "product": "รีเนียมเฮปทอกไซด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ออกไซด์ระเหิดง่าย ใช้เป็นตัวเร่งปฏิกิริยา"}, {"pair": ["Os", "O"], "equation": "Os + 2O₂ → OsO₄", "product": "ออสเมียมเตตระออกไซด์", "type": "synthesis", "conditions": "อุณหภูมิห้อง (ออสเมียมผงทำปฏิกิริยากับอากาศได้เองช้า ๆ)", "desc": "ระเหิดง่าย มีพิษร้ายแรงต่อดวงตา ใช้ย้อมไขมันในกล้องจุลทรรศน์อิเล็กตรอน"}, {"pair": ["Ir", "O"], "equation": "4Ir + 3O₂ → 2IrO₂", "product": "อิริเดียม(IV) ออกไซด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก", "desc": "อิริเดียมเฉื่อยมากที่สุดชนิดหนึ่ง ต้องใช้ความร้อนสูงมากจึงเกิดออกไซด์บาง ๆ ที่ผิว"}, {"pair": ["Pt", "Cl"], "equation": "Pt + 2Cl₂ → PtCl₄", "product": "แพลตทินัม(IV) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน ~300°C", "desc": "แพลตทินัมไม่ทำปฏิกิริยากับออกซิเจนโดยตรง แต่ทำปฏิกิริยากับคลอรีนที่อุณหภูมิสูงได้"}, {"pair": ["Au", "Cl"], "equation": "2Au + 3Cl₂ → 2AuCl₃", "product": "ทองคำ(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน ~200°C", "desc": "แม้ทองคำจะไม่ทำปฏิกิริยากับ O₂ แต่ทำปฏิกิริยากับคลอรีนที่ร้อนได้ช้า ๆ"}, {"pair": ["Hg", "O"], "equation": "2Hg + O₂ → 2HgO", "product": "ปรอท(II) ออกไซด์", "type": "synthesis", "conditions": "ความร้อน ~350°C", "desc": "ปฏิกิริยาที่โจเซฟ พริสต์ลีย์และลาวัวซิเยใช้ค้นพบแก๊สออกซิเจนในศตวรรษที่ 18"}, {"pair": ["Hg", "S"], "equation": "Hg + S → HgS", "product": "ปรอท(II) ซัลไฟด์ (ซินนาบาร์)", "type": "synthesis", "conditions": "เกิดได้แม้ที่อุณหภูมิห้องเมื่อบดผสมกัน", "desc": "รูปแบบสีดำเกิดก่อน แล้วเปลี่ยนเป็นผลึกสีแดง (cinnabar) เม็ดสีแดงชาดที่มนุษย์ใช้มาแต่โบราณ"}, {"pair": ["Hg", "Cl"], "equation": "Hg + Cl₂ → HgCl₂", "product": "ปรอท(II) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "เป็นพิษร้ายแรง เคยใช้เป็นยาฆ่าเชื้อในอดีตก่อนทราบความเป็นพิษที่แท้จริง"}, {"pair": ["Ga", "O"], "equation": "4Ga + 3O₂ → 2Ga₂O₃", "product": "แกลเลียมออกไซด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "สารกึ่งตัวนำช่องว่างแถบพลังงานกว้าง ใช้ในอุปกรณ์อิเล็กทรอนิกส์กำลังสูงยุคใหม่"}, {"pair": ["Ga", "Cl"], "equation": "2Ga + 3Cl₂ → 2GaCl₃", "product": "แกลเลียม(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ใช้เป็นตัวเร่งปฏิกิริยาในเคมีอินทรีย์คล้าย AlCl₃"}, {"pair": ["In", "O"], "equation": "4In + 3O₂ → 2In₂O₃", "product": "อินเดียมออกไซด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ผสมกับดีบุกออกไซด์เป็น ITO (Indium Tin Oxide) ใช้เป็นขั้วไฟฟ้าโปร่งใสในจอสัมผัส"}, {"pair": ["In", "Cl"], "equation": "2In + 3Cl₂ → 2InCl₃", "product": "อินเดียม(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ใช้เป็นกรดลิวอิสในการสังเคราะห์สารอินทรีย์"}, {"pair": ["Tl", "O"], "equation": "4Tl + O₂ → 2Tl₂O", "product": "แทลเลียม(I) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "แทลเลียมชอบสถานะออกซิเดชัน +1 มากกว่า +3 ต่างจากธาตุอื่นในหมู่เดียวกัน"}, {"pair": ["Tl", "Cl"], "equation": "2Tl + Cl₂ → 2TlCl", "product": "แทลเลียม(I) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ผลิตภัณฑ์หลักเป็น Tl(I) เช่นกัน สอดคล้องกับ inert pair effect"}, {"pair": ["Sn", "Cl"], "equation": "Sn + 2Cl₂ → SnCl₄", "product": "ดีบุก(IV) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของเหลวไม่มีสี ควันในอากาศชื้น ใช้เคลือบกระจกให้นำไฟฟ้า"}, {"pair": ["Pb", "Cl"], "equation": "Pb + Cl₂ → PbCl₂", "product": "ตะกั่ว(II) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ตะกั่วชอบสถานะ +2 มากกว่า +4 เช่นเดียวกับแทลเลียม (inert pair effect)"}, {"pair": ["Bi", "O"], "equation": "4Bi + 3O₂ → 2Bi₂O₃", "product": "บิสมัท(III) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (เปลวไฟสีน้ำเงิน)", "desc": "ผงสีเหลือง ใช้แทนสารตะกั่วในเครื่องสำอางและยาลดกรดบางชนิด"}, {"pair": ["Bi", "Cl"], "equation": "2Bi + 3Cl₂ → 2BiCl₃", "product": "บิสมัท(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ไวต่อความชื้น สลายตัวในน้ำให้ BiOCl (บิสมัทออกซีคลอไรด์)"}, {"pair": ["Po", "O"], "equation": "Po + O₂ → PoO₂", "product": "พอโลเนียมไดออกไซด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "กัมมันตรังสีสูงมาก ศึกษาได้เฉพาะในปริมาณจุลภาคเท่านั้น"}, {"pair": ["Po", "Cl"], "equation": "Po + 2Cl₂ → PoCl₄", "product": "พอโลเนียมเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของแข็งสีเหลือง ระเหิดง่าย"}, {"pair": ["B", "O"], "equation": "4B + 3O₂ → 2B₂O₃", "product": "โบรอนไตรออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ที่อุณหภูมิสูง", "desc": "สารตั้งต้นสำคัญในการผลิตแก้วโบโรซิลิเกต (แก้วทนความร้อน เช่น Pyrex)"}, {"pair": ["B", "Cl"], "equation": "2B + 3Cl₂ → 2BCl₃", "product": "โบรอนไตรคลอไรด์", "type": "synthesis", "conditions": "ความร้อนสูง", "desc": "ใช้ในอุตสาหกรรมผลิตสารกึ่งตัวนำเพื่อเจือสารซิลิคอน"}, {"pair": ["B", "N"], "equation": "2B + N₂ → 2BN", "product": "โบรอนไนไตรด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก (>1000°C)", "desc": "มีโครงสร้างคล้ายกราไฟต์ จึงเรียกว่า \"กราไฟต์ขาว\" ลื่นและทนความร้อนสูงมาก"}, {"pair": ["Si", "Cl"], "equation": "Si + 2Cl₂ → SiCl₄", "product": "ซิลิคอนเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "สารตั้งต้นสำคัญในการผลิตซิลิคอนบริสุทธิ์เกรดอิเล็กทรอนิกส์และใยแก้วนำแสง"}, {"pair": ["Si", "N"], "equation": "3Si + 2N₂ → Si₃N₄", "product": "ซิลิคอนไนไตรด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก", "desc": "เซรามิกวิศวกรรมที่แข็งแรงทนความร้อนสูง ใช้ในตลับลูกปืนและใบพัดกังหัน"}, {"pair": ["Ge", "O"], "equation": "Ge + O₂ → GeO₂", "product": "เจอร์เมเนียมไดออกไซด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ใช้ทำเลนส์อินฟราเรดและใยแก้วนำแสง"}, {"pair": ["Ge", "Cl"], "equation": "Ge + 2Cl₂ → GeCl₄", "product": "เจอร์เมเนียมเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของเหลวใช้สังเคราะห์สารประกอบเจอร์เมเนียมบริสุทธิ์"}, {"pair": ["As", "O"], "equation": "4As + 3O₂ → 2As₂O₃", "product": "สารหนูไตรออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "สารพิษร้ายแรงที่มีชื่อเสียงในประวัติศาสตร์ (\"white arsenic\")"}, {"pair": ["As", "Cl"], "equation": "2As + 3Cl₂ → 2AsCl₃", "product": "สารหนูไตรคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของเหลวมีพิษ ใช้สังเคราะห์สารประกอบสารหนูอื่น"}, {"pair": ["Sb", "O"], "equation": "4Sb + 3O₂ → 2Sb₂O₃", "product": "พลวงไตรออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (เปลวไฟสีน้ำเงินอมขาว)", "desc": "ใช้เป็นสารหน่วงไฟในพลาสติกและสิ่งทอ"}, {"pair": ["Sb", "Cl"], "equation": "2Sb + 3Cl₂ → 2SbCl₃", "product": "พลวงไตรคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ควันในอากาศชื้น ใช้เป็นตัวเร่งปฏิกิริยาในอุตสาหกรรม PVC"}, {"pair": ["Te", "O"], "equation": "Te + O₂ → TeO₂", "product": "เทลลูเรียมไดออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (เปลวไฟสีน้ำเงินอมเขียว)", "desc": "ใช้ทำแก้วพิเศษดัชนีหักเหแสงสูงสำหรับอุปกรณ์ออปติก"}, {"pair": ["Te", "Cl"], "equation": "Te + 2Cl₂ → TeCl₄", "product": "เทลลูเรียมเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ของแข็งไวต่อความชื้น สลายตัวให้ TeO₂ และ HCl"}, {"pair": ["Se", "Cl"], "equation": "Se + 2Cl₂ → SeCl₄", "product": "ซีลีเนียมเตตระคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "สลายตัวง่ายเมื่อโดนความชื้น"}, {"pair": ["Se", "H"], "equation": "H₂ + Se → H₂Se", "product": "ไฮโดรเจนซีลีไนด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "แก๊สพิษร้ายแรงกว่า H₂S กลิ่นเหม็นรุนแรงมาก"}, {"pair": ["N", "F"], "equation": "N₂ + 3F₂ → 2NF₃", "product": "ไนโตรเจนไตรฟลูออไรด์", "type": "synthesis", "conditions": "ตัวเร่งปฏิกิริยา / ไฟฟ้าเคมี ไม่เกิดขึ้นเองง่าย ๆ ที่อุณหภูมิห้อง", "desc": "ต่างจาก NCl₃ ตรงที่ NF₃ เสถียรและไม่ระเบิด ใช้ในอุตสาหกรรมผลิตชิปเซมิคอนดักเตอร์"}, {"pair": ["C", "S"], "equation": "C + 2S → CS₂", "product": "คาร์บอนไดซัลไฟด์", "type": "synthesis", "conditions": "อุณหภูมิสูงมาก (~800°C)", "desc": "ของเหลวไวไฟสูงมาก ใช้เป็นตัวทำละลายในอุตสาหกรรมเรยอน"}, {"pair": ["P", "S"], "equation": "4P + 3S → P₄S₃", "product": "ฟอสฟอรัสเซสควิซัลไฟด์", "type": "synthesis", "conditions": "หลอมรวมกันด้วยความร้อน", "desc": "ใช้เป็นหัวไม้ขีดไฟชนิด \"จุดกับพื้นผิวใดก็ได้\" (strike-anywhere match)"}, {"pair": ["P", "F"], "equation": "2P + 5F₂ → 2PF₅", "product": "ฟอสฟอรัสเพนตะฟลูออไรด์", "type": "synthesis", "conditions": "ปฏิกิริยารุนแรง", "desc": "แก๊สไม่มีสี ไวต่อความชื้นมาก"}, {"pair": ["P", "Br"], "equation": "2P + 3Br₂ → 2PBr₃", "product": "ฟอสฟอรัสไตรโบรไมด์", "type": "synthesis", "conditions": "ปฏิกิริยารุนแรง (คายความร้อนสูง)", "desc": "ใช้สังเคราะห์สารประกอบอินทรีย์โบรไมด์ในห้องปฏิบัติการ"}, {"pair": ["Ar", "F"], "equation": "ไม่เกิดปฏิกิริยาในสภาวะปกติ (No reaction under normal conditions)", "product": "—", "type": "none", "conditions": "—", "desc": "อาร์กอนไม่ทำปฏิกิริยากับฟลูออรีนในสภาวะปกติ มีเพียง HArF ที่สังเคราะห์ได้ในปี 2000 โดยการฉายแสง UV ใส่ HF ในเมทริกซ์อาร์กอนแข็งที่อุณหภูมิต่ำกว่า -246°C (27 K) เท่านั้น และสลายตัวทันทีเมื่ออุ่นขึ้น จึงไม่ถือเป็นปฏิกิริยาที่เกิดได้ในสภาวะทั่วไป"}, {"pair": ["Kr", "F"], "equation": "Kr + F₂ → KrF₂", "product": "คริปทอนไดฟลูออไรด์", "type": "synthesis", "conditions": "ต้องใช้ไฟฟ้าแรงสูงหรือแสง UV ที่อุณหภูมิต่ำมาก (ประมาณ -196°C)", "desc": "เสถียรน้อยกว่า XeF₂ มาก สลายตัวที่อุณหภูมิห้อง เป็นตัวออกซิไดซ์ที่ทรงพลังที่สุดชนิดหนึ่งเท่าที่รู้จัก"}, {"pair": ["Rn", "F"], "equation": "Rn + F₂ → RnF₂", "product": "เรดอนไดฟลูออไรด์", "type": "synthesis", "conditions": "ความร้อน ~400°C", "desc": "สังเคราะห์ได้ตั้งแต่ปี 1962 แต่ยังไม่สามารถระบุโครงสร้างที่แน่ชัดได้ครบถ้วน เนื่องจากเรดอนกัมมันตรังสีสูงและสลายตัวเร็ว"}, {"pair": ["La", "O"], "equation": "4La + 3O₂ → 2La₂O₃", "product": "แลนทานัมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "แลนทาไนด์ทุกตัวสร้างออกไซด์ Ln₂O₃ เป็นแบบแผนหลัก ยกเว้น Ce, Pr, Tb ที่มีข้อยกเว้น"}, {"pair": ["Ce", "O"], "equation": "Ce + O₂ → CeO₂", "product": "ซีเรียม(IV) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ซีเรียมให้ CeO₂ โดยตรงแทนที่จะเป็น Ce₂O₃ เพราะสถานะ +4 เสถียรเป็นพิเศษ ใช้ในตัวเร่งปฏิกิริยาเครื่องฟอกไอเสียรถยนต์"}, {"pair": ["Pr", "O"], "equation": "6Pr + 11O₂ → 2Pr₆O₁₁", "product": "เพรซีโอดิเมียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "Pr ให้ออกไซด์ผสมสถานะออกซิเดชัน Pr₆O₁₁ เป็นผลิตภัณฑ์เสถียรที่สุด แทนที่จะเป็น Pr₂O₃ ล้วน"}, {"pair": ["Nd", "O"], "equation": "4Nd + 3O₂ → 2Nd₂O₃", "product": "นีโอดิเมียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "Nd₂O₃ เป็นสารตั้งต้นผลิตแม่เหล็กนีโอดิเมียมกำลังสูง"}, {"pair": ["Sm", "O"], "equation": "4Sm + 3O₂ → 2Sm₂O₃", "product": "ซาแมเรียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้ในแม่เหล็กซาแมเรียม-โคบอลต์ที่ทนความร้อนสูงกว่าแม่เหล็กนีโอดิเมียม"}, {"pair": ["Eu", "O"], "equation": "4Eu + 3O₂ → 2Eu₂O₃", "product": "ยูโรเพียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ยูโรเพียมเป็นสารเรืองแสงสีแดงสำคัญในจอโทรทัศน์และหลอดไฟ LED"}, {"pair": ["Gd", "O"], "equation": "4Gd + 3O₂ → 2Gd₂O₃", "product": "แกโดลิเนียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้ในสารทึบแสง MRI และวัสดุแม่เหล็กเชิงความร้อน"}, {"pair": ["Tb", "O"], "equation": "ผลิตภัณฑ์เสถียรคือ Tb₄O₇ (ออกไซด์ผสมสถานะออกซิเดชัน)", "product": "เทอร์เบียมออกไซด์ (Tb₄O₇)", "type": "synthesis", "conditions": "เผาไหม้", "desc": "เช่นเดียวกับ Pr, เทอร์เบียมให้ออกไซด์ผสมสถานะออกซิเดชัน Tb₄O₇ เป็นผลิตภัณฑ์เสถียรที่สุด"}, {"pair": ["Dy", "O"], "equation": "4Dy + 3O₂ → 2Dy₂O₃", "product": "ดิสโพรเซียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "เติมในแม่เหล็กนีโอดิเมียมเพื่อเพิ่มความทนความร้อน"}, {"pair": ["Ho", "O"], "equation": "4Ho + 3O₂ → 2Ho₂O₃", "product": "โฮลเมียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้เจือแก้วและเลเซอร์ทางการแพทย์"}, {"pair": ["Er", "O"], "equation": "4Er + 3O₂ → 2Er₂O₃", "product": "เออร์เบียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้เจือใยแก้วนำแสงเพื่อขยายสัญญาณในระบบสื่อสารใยแก้ว"}, {"pair": ["Tm", "O"], "equation": "4Tm + 3O₂ → 2Tm₂O₃", "product": "ทูเลียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ธาตุหายากที่สุดในกลุ่มแลนทาไนด์ที่เสถียร"}, {"pair": ["Yb", "O"], "equation": "4Yb + 3O₂ → 2Yb₂O₃", "product": "อิตเทอร์เบียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้ในเลเซอร์ไฟเบอร์กำลังสูงยุคใหม่"}, {"pair": ["Lu", "O"], "equation": "4Lu + 3O₂ → 2Lu₂O₃", "product": "ลูทีเชียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ลูทีเชียมเป็นแลนทาไนด์ที่หนาแน่นและแข็งที่สุด ใช้ในสารเรืองแสงตรวจจับรังสีแกมมา (LSO)"}, {"pair": ["La", "Cl"], "equation": "2La + 3Cl₂ → 2LaCl₃", "product": "แลนทานัมไตรคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "แลนทาไนด์เกือบทั้งหมดสร้างคลอไรด์ในรูปแบบ LnCl₃ เป็นแบบแผนทั่วไป"}, {"pair": ["Ce", "Cl"], "equation": "2Ce + 3Cl₂ → 2CeCl₃", "product": "ซีเรียม(III) คลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "ต่างจากออกไซด์ตรงที่คลอไรด์ยังคงเป็น Ce(III) เป็นหลัก"}, {"pair": ["Nd", "Cl"], "equation": "2Nd + 3Cl₂ → 2NdCl₃", "product": "นีโอดิเมียมไตรคลอไรด์", "type": "synthesis", "conditions": "ความร้อน", "desc": "สารตั้งต้นในการถลุงโลหะนีโอดิเมียมบริสุทธิ์"}, {"pair": ["Ac", "O"], "equation": "4Ac + 3O₂ → 2Ac₂O₃", "product": "แอกทิเนียมออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "แอกทิเนียมมีสมบัติคล้ายแลนทานัมมาก แต่กัมมันตรังสีสูง ศึกษาได้ในปริมาณจำกัดมาก"}, {"pair": ["Th", "O"], "equation": "Th + O₂ → ThO₂", "product": "ทอเรียมไดออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (ผงทอเรียมติดไฟได้เอง)", "desc": "มีจุดหลอมเหลวสูงที่สุดในบรรดาออกไซด์ทั้งหมด (~3390°C) กำลังถูกวิจัยเป็นเชื้อเพลิงนิวเคลียร์ทางเลือก"}, {"pair": ["Pa", "O"], "equation": "4Pa + 5O₂ → 2Pa₂O₅", "product": "โพรแทกทิเนียมเพนทอกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "Pa(V) เป็นสถานะออกซิเดชันที่เสถียรที่สุดของโพรแทกทิเนียม คล้ายกับแทนทาลัมและไนโอเบียม"}, {"pair": ["U", "O"], "equation": "3U + 4O₂ → U₃O₈", "product": "ยูเรเนียมออกไซด์ (U₃O₈, \"yellowcake\")", "type": "synthesis", "conditions": "เผาไหม้ในอากาศ", "desc": "ผลิตภัณฑ์เสถียรที่สุดเมื่อโลหะยูเรเนียมเผาไหม้ในอากาศ เป็นรูปแบบที่ใช้ขนส่งแร่ยูเรเนียมในอุตสาหกรรม"}, {"pair": ["Np", "O"], "equation": "Np + O₂ → NpO₂", "product": "เนปทูเนียมไดออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "NpO₂ เป็นออกไซด์ที่เสถียรที่สุดของเนปทูเนียม โครงสร้างฟลูออไรต์เช่นเดียวกับ UO₂"}, {"pair": ["Pu", "O"], "equation": "Pu + O₂ → PuO₂", "product": "พลูโทเนียมไดออกไซด์", "type": "synthesis", "conditions": "เผาไหม้ (ผงพลูโทเนียมติดไฟได้เองในอากาศ)", "desc": "ใช้เป็นเชื้อเพลิงในเครื่องปฏิกรณ์นิวเคลียร์และแหล่งพลังงานของยานอวกาศ (RTG)"}, {"pair": ["Am", "O"], "equation": "Am + O₂ → AmO₂", "product": "อะเมริเซียมไดออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "ใช้ในหัวตรวจจับควันไฟฟ้าประจุไอออนบางรุ่น (เป็น Am-241)"}, {"pair": ["Cm", "O"], "equation": "4Cm + 3O₂ → 2Cm₂O₃", "product": "คูเรียม(III) ออกไซด์", "type": "synthesis", "conditions": "เผาไหม้", "desc": "สถานะออกซิเดชันที่เสถียรที่สุดของคูเรียมคือ +3 ต่างจากธาตุแอกทิไนด์ตัวก่อนหน้า"}];
+
+// ============================================================
+// ELEMENTA — app logic
+// ============================================================
+
+const CATEGORY_LABEL = {
+  "alkali": "โลหะแอลคาไล",
+  "alkaline": "โลหะแอลคาไลน์เอิร์ท",
+  "transition": "โลหะทรานซิชัน",
+  "post-transition": "โลหะหลังทรานซิชัน",
+  "metalloid": "กึ่งโลหะ",
+  "nonmetal": "อโลหะ",
+  "halogen": "แฮโลเจน",
+  "noble": "แก๊สมีตระกูล",
+  "lanthanide": "แลนทาไนด์",
+  "actinide": "แอกทิไนด์",
+  "unknown": "ยังไม่ทราบสมบัติแน่ชัด"
+};
+
+const CAT_VAR = {
+  "alkali":"--alkali","alkaline":"--alkaline","transition":"--transition",
+  "post-transition":"--posttrans","metalloid":"--metalloid","nonmetal":"--nonmetal",
+  "halogen":"--halogen","noble":"--noble","lanthanide":"--lanthanide",
+  "actinide":"--actinide","unknown":"--unknown"
+};
+
+const byId = id => document.getElementById(id);
+const tableEl = byId("ptable");
+const searchEl = byId("search");
+const resetBtn = byId("resetBtn");
+const legendEl = byId("legend");
+const slot1 = byId("slot1");
+const slot2 = byId("slot2");
+const infoPanel = byId("infoPanel");
+const readout = byId("readout");
+
+let selected = [];      // array of element objects, max 2
+let activeFilter = null; // category filter from legend
+let query = "";
+
+// index reactions by sorted-symbol-pair key
+const reactionMap = new Map();
+REACTIONS.forEach(r => {
+  const key = [...r.pair].sort().join("-");
+  reactionMap.set(key, r);
+});
+const elBySymbol = new Map(ELEMENTS.map(e => [e.symbol, e]));
+
+function cssColor(cat){
+  return `var(${CAT_VAR[cat] || "--unknown"})`;
+}
+
+function buildLegend(){
+  const cats = Object.keys(CATEGORY_LABEL);
+  legendEl.innerHTML = cats.map(c => `
+    <div class="legend-item" data-cat="${c}">
+      <span class="swatch" style="background:${cssColor(c)}"></span>${CATEGORY_LABEL[c]}
+    </div>
+  `).join("");
+  legendEl.querySelectorAll(".legend-item").forEach(item=>{
+    item.addEventListener("click", ()=>{
+      const cat = item.dataset.cat;
+      activeFilter = activeFilter === cat ? null : cat;
+      legendEl.querySelectorAll(".legend-item").forEach(i=>i.classList.toggle("active", i.dataset.cat===activeFilter));
+      renderTable();
+    });
+  });
+}
+
+function matchesQuery(el){
+  if(!query) return true;
+  const q = query.toLowerCase();
+  return el.symbol.toLowerCase().includes(q) ||
+         el.name.toLowerCase().includes(q) ||
+         el.nameTh.includes(query) ||
+         String(el.z) === query;
+}
+
+function renderTable(){
+  tableEl.innerHTML = "";
+  ELEMENTS.forEach(el=>{
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.style.setProperty("--cat-color", cssColor(el.category));
+    tile.style.gridRow = el.row;
+    tile.style.gridColumn = el.col;
+
+    const isSelected = selected.some(s=>s.z===el.z);
+    if(isSelected) tile.classList.add("selected");
+
+    const filteredOut = (activeFilter && el.category!==activeFilter) || !matchesQuery(el);
+    if(filteredOut) tile.classList.add("dim");
+
+    tile.innerHTML = `
+      <span class="z">${el.z}</span>
+      <span class="sym">${el.symbol}</span>
+      <span class="th">${el.nameTh}</span>
+      <span class="mass">${el.mass}${el.radioactive? "*":""}</span>
+      <span class="tip">${el.name} · ${CATEGORY_LABEL[el.category]}</span>
+    `;
+    tile.addEventListener("click", ()=>toggleSelect(el));
+    tableEl.appendChild(tile);
+  });
+}
+
+function toggleSelect(el){
+  const idx = selected.findIndex(s=>s.z===el.z);
+  if(idx>-1){
+    selected.splice(idx,1);
+  } else {
+    if(selected.length>=2) selected.shift();
+    selected.push(el);
+  }
+  renderTable();
+  renderTray();
+  renderInfo();
+  renderReaction();
+}
+
+function renderTray(){
+  [slot1, slot2].forEach((slot, i)=>{
+    const el = selected[i];
+    if(el){
+      slot.classList.add("filled");
+      slot.style.borderColor = cssColor(el.category);
+      slot.innerHTML = `<span class="slot-sym" style="color:${cssColor(el.category)}">${el.symbol}</span><span class="slot-name">${el.name}</span>`;
+    } else {
+      slot.classList.remove("filled");
+      slot.style.borderColor = "";
+      slot.innerHTML = `<span class="slot-sym">?</span>`;
+    }
+  });
+}
+
+function renderInfo(){
+  if(selected.length===0){
+    infoPanel.innerHTML = `<div class="info-empty">แตะธาตุในตารางเพื่อดูข้อมูล<br>(เลือกได้สูงสุด 2 ธาตุเพื่อดูปฏิกิริยา)</div>`;
+    return;
+  }
+  const el = selected[selected.length-1];
+  infoPanel.innerHTML = `
+    <div class="info-card">
+      <div class="head">
+        <div class="big-sym" style="color:${cssColor(el.category)};border-color:${cssColor(el.category)}">${el.symbol}</div>
+        <div>
+          <div class="name-en">${el.name}</div>
+          <div class="name-th">${el.nameTh}</div>
+          <div class="cat-pill" style="border-color:${cssColor(el.category)};color:${cssColor(el.category)}">${CATEGORY_LABEL[el.category]}</div>
+        </div>
+      </div>
+      <div class="row"><span class="k">เลขอะตอม (Z)</span><span class="v">${el.z}</span></div>
+      <div class="row"><span class="k">มวลอะตอม</span><span class="v">${el.mass}${el.radioactive?" (ไอโซโทปเสถียรที่สุด)":""}</span></div>
+      <div class="row"><span class="k">คาบ / หมู่</span><span class="v">${el.period} / ${el.group ?? "—"}</span></div>
+      <div class="row"><span class="k">สถานะที่ 25°C</span><span class="v">${el.phase}</span></div>
+      <div class="row"><span class="k">กัมมันตรังสี</span><span class="v">${el.radioactive? "ใช่":"ไม่"}</span></div>
+    </div>
+  `;
+}
+
+function renderReaction(){
+  if(selected.length<2){
+    readout.classList.remove("scan");
+    if(selected.length===0){
+      readout.innerHTML = `<div class="info-empty">เลือกธาตุอันที่สองเพื่อดูว่าจะเกิดปฏิกิริยาอะไร</div>`;
+    } else {
+      readout.innerHTML = `<div class="info-empty">เลือก <b>${selected[0].symbol}</b> แล้ว — เลือกอีกธาตุหนึ่งเพื่อผสม</div>`;
+    }
+    return;
+  }
+  const [a,b] = selected;
+  const key = [a.symbol,b.symbol].sort().join("-");
+  const r = reactionMap.get(key);
+
+  if(!r){
+    readout.innerHTML = `
+      <span class="none-badge">ไม่มีข้อมูลในฐานข้อมูล</span>
+      <p class="desc">ยังไม่มีข้อมูลปฏิกิริยาที่ยืนยันแล้วสำหรับคู่ <b>${a.symbol} + ${b.symbol}</b> ในฐานข้อมูลชุดนี้ (ฐานข้อมูลคัดสรรเฉพาะปฏิกิริยาที่ตรวจสอบแล้วเพื่อความแม่นยำ ไม่ได้ครอบคลุมทุกคู่ธาตุ) ลองเลือกคู่อื่น หรือดูหมวดหมู่ธาตุเพื่อเดาแนวโน้มปฏิกิริยาได้ที่แผงข้อมูลธาตุด้านซ้าย</p>
+    `;
+  } else if(r.type === "none"){
+    readout.innerHTML = `
+      <span class="none-badge">ไม่ทำปฏิกิริยา</span>
+      <p class="desc"><b>${a.symbol} + ${b.symbol}:</b> ${r.desc}</p>
+    `;
+  } else {
+    readout.innerHTML = `
+      <p class="eq">${r.equation}</p>
+      <p class="product">${r.product}</p>
+      <div class="meta">
+        <div>ประเภท<span>${r.type}</span></div>
+        <div>เงื่อนไข<span>${r.conditions}</span></div>
+      </div>
+      <p class="desc">${r.desc}</p>
+    `;
+  }
+  // trigger scan animation
+  readout.classList.remove("scan");
+  void readout.offsetWidth; // reflow to restart animation
+  readout.classList.add("scan");
+}
+
+searchEl.addEventListener("input", e=>{
+  query = e.target.value.trim();
+  renderTable();
+});
+
+resetBtn.addEventListener("click", ()=>{
+  selected = [];
+  activeFilter = null;
+  query = "";
+  searchEl.value = "";
+  legendEl.querySelectorAll(".legend-item").forEach(i=>i.classList.remove("active"));
+  renderTable();
+  renderTray();
+  renderInfo();
+  renderReaction();
+});
+
+buildLegend();
+renderTable();
+renderTray();
+renderInfo();
+renderReaction();
+
+</script>
+</body>
+</html>
